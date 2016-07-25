@@ -16,10 +16,10 @@ public class CreateCardActivity extends AppCompatActivity {
 
     TextView titleEdit;
     TextView extraInfo;
+    String titleEditContents;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_card);
@@ -28,43 +28,38 @@ public class CreateCardActivity extends AppCompatActivity {
         extraInfo = (TextView) findViewById(R.id.extraInfoCreateCard);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fabToScan);
-        fab.setOnClickListener(new View.OnClickListener()
-        {
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view)
-            {
-                    scan();
+            public void onClick(View view) {
+                scan();
             }
         });
     }
 
-    public void scan()
-    {
+    public void scan() {
         IntentIntegrator integrator = new IntentIntegrator(this);
         integrator.initiateScan();
+        //Dirty workaround for weird bug where title gets duplicated after returning from scan.
+        titleEditContents = titleEdit.getText().toString();
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent intent)
-    {
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        //Part 2 of the workaround
+        titleEdit.setText(titleEditContents);
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
         final String scanResultRaw = scanResult.toString();
         final String splitData[] = scanResult.toString().split("\\r\\n|\\n|\\r");
-        if (splitData[0].substring(8).equals("null"))
-        {
+        if (splitData[0].substring(8).equals("null")) {
             //Display error as a toast
             Toast.makeText(getApplicationContext(), "Barcode not found.", Toast.LENGTH_SHORT).show();
-        }
-        else
-        {
+        } else {
             Button confirmButton = (Button) findViewById(R.id.confirmButtonCreateCard);
-            extraInfo.setText(scanResult.toString());
+            extraInfo.setText(scanResultRaw);
             confirmButton.setText("OK");
             confirmButton.setEnabled(true);
-            confirmButton.setOnClickListener(new View.OnClickListener()
-            {
+            confirmButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onClick(View view)
-                {
+                public void onClick(View view) {
                     saveCard(splitData, scanResultRaw);
                     createdCard(view);
                 }
@@ -72,15 +67,12 @@ public class CreateCardActivity extends AppCompatActivity {
         }
     }
 
-    public void saveCard(String[] splitData, String scanResultRaw)
-    {
+    public void saveCard(String[] splitData, String scanResultRaw) {
         DBHelper dbHelper = new DBHelper(getApplicationContext());
         dbHelper.insert(titleEdit.getText().toString(), splitData[0].substring(8), splitData[1].substring(10), scanResultRaw);
-
     }
 
-    public void createdCard(View view)
-    {
+    public void createdCard(View view) {
         Intent createdCard = new Intent(this, MainActivity.class);
         startActivity(createdCard);
         finish();
