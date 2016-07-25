@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "846652782731",
+    "firebase_url": "https://cardstore-29158.firebaseio.com",
+    "project_id": "cardstore-29158",
+    "storage_bucket": "cardstore-29158.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:846652782731:android:e96e0b523cd3c27d",
+        "android_client_info": {
+          "package_name": "com.speedyfirecyclone.cardstore"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "846652782731-37ucks3384baftj5r7b5fadfg9tpg0g8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.speedyfirecyclone.cardstore",
+            "certificate_hash": "BCAB0C3BACF77F4F58D48E7B8F26DA94C19A2477"
+          }
+        },
+        {
+          "client_id": "846652782731-gm14evv0f1sj3q7k8ml8j8v8ebi7n5jj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBnQcIv2hzlfq8srZm9_u7CFhzo2gMg048"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "846652782731-gm14evv0f1sj3q7k8ml8j8v8ebi7n5jj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
