@@ -9,33 +9,36 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
 public class EditCardActivity extends AppCompatActivity {
 
-    int identifier;
-    DBHelper dbHelper;
+    String cardID;
     Button confirmButton;
     Button deleteButton;
     TextView titleEdit;
     TextView extraInfo;
+    FirebaseDatabase database;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        database = FirebaseDatabase.getInstance();
         setContentView(R.layout.activity_create_card);
 
-        identifier = getIntent().getIntExtra("ID", 0);
-        dbHelper = new DBHelper(this);
+        cardID = getIntent().getStringExtra("cardID");
         confirmButton = (Button) findViewById(R.id.confirmButtonCreateCard);
         deleteButton = (Button) findViewById(R.id.deleteButtonCreateCard);
         titleEdit = (TextView) findViewById(R.id.titleEditCreateCard);
         extraInfo = (TextView) findViewById(R.id.extraInfoCreateCard);
 
         titleEdit.setText(getIntent().getStringExtra("title"));
-        extraInfo.setText(getIntent().getStringExtra("raw"));
+        extraInfo.setText(getIntent().getStringExtra("data"));
 
         confirmButton.setText("OK");
         confirmButton.setEnabled(true);
@@ -52,7 +55,8 @@ public class EditCardActivity extends AppCompatActivity {
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                dbHelper.delete(identifier);
+                DatabaseReference myRef = database.getReferenceFromUrl(cardID);
+                myRef.removeValue();
                 finishedCard();
 
             }
@@ -92,9 +96,19 @@ public class EditCardActivity extends AppCompatActivity {
     }
 
     public void updateCard() {
+        String titleEditContents = titleEdit.getText().toString();
         String scanResultRaw = extraInfo.getText().toString();
-        String splitData[] = scanResultRaw.split("\\r\\n|\\n|\\r");
-        dbHelper.update(identifier, titleEdit.getText().toString(), splitData[0].substring(8), splitData[1].substring(10), scanResultRaw);
+        String favorite = getIntent().getStringExtra("favorite");
+        String originalTitle = getIntent().getStringExtra("title");
+        if (originalTitle.equals(favorite)) {
+            DatabaseReference myRef = database.getReferenceFromUrl(cardID);
+            Cardstructure card = new Cardstructure(titleEditContents, scanResultRaw, titleEditContents);
+            myRef.setValue(card);
+        } else {
+            DatabaseReference myRef = database.getReferenceFromUrl(cardID);
+            Cardstructure card = new Cardstructure(titleEditContents, scanResultRaw, "     !" + titleEditContents);
+            myRef.setValue(card);
+        }
     }
 
     public void finishedCard() {

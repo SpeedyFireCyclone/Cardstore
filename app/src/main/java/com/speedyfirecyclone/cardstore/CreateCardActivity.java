@@ -9,6 +9,9 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
@@ -17,11 +20,15 @@ public class CreateCardActivity extends AppCompatActivity {
     TextView titleEdit;
     TextView extraInfo;
     String titleEditContents;
+    String userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    FirebaseDatabase database;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        database = FirebaseDatabase.getInstance();
         setContentView(R.layout.activity_create_card);
 
         titleEdit = (TextView) findViewById(R.id.titleEditCreateCard);
@@ -48,7 +55,7 @@ public class CreateCardActivity extends AppCompatActivity {
         titleEdit.setText(titleEditContents);
         IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
         final String scanResultRaw = scanResult.toString();
-        final String splitData[] = scanResult.toString().split("\\r\\n|\\n|\\r");
+        final String splitData[] = scanResultRaw.split("\\r\\n|\\n|\\r");
         if (splitData[0].substring(8).equals("null")) {
             //Display error as a toast
             Toast.makeText(getApplicationContext(), "Barcode not found.", Toast.LENGTH_SHORT).show();
@@ -60,16 +67,19 @@ public class CreateCardActivity extends AppCompatActivity {
             confirmButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    saveCard(splitData, scanResultRaw);
-                    createdCard(view);
+                    titleEditContents = titleEdit.getText().toString();
+                    if (titleEditContents.equals("")) {
+                        Toast.makeText(getApplicationContext(), "Set a title before saving.", Toast.LENGTH_SHORT).show();
+                    } else {
+                        DatabaseReference myRef = database.getReference("users/" + userID);
+                        Cardstructure card = new Cardstructure(titleEditContents, scanResultRaw);
+                        myRef.push().setValue(card);
+                        createdCard(view);
+                    }
+
                 }
             });
         }
-    }
-
-    public void saveCard(String[] splitData, String scanResultRaw) {
-        DBHelper dbHelper = new DBHelper(getApplicationContext());
-        dbHelper.insert(titleEdit.getText().toString(), splitData[0].substring(8), splitData[1].substring(10), scanResultRaw);
     }
 
     public void createdCard(View view) {
