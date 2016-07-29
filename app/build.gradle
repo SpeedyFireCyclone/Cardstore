@@ -1,20 +1,18 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-    }
     compileSdkVersion 24
     buildToolsVersion '24.0.1'
     defaultConfig {
         applicationId "com.speedyfirecyclone.cardstore"
         minSdkVersion 21
         targetSdkVersion 23
-        versionCode 6
-        versionName "270716"
+        versionCode 7
+        versionName "280716"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             zipAlignEnabled true
         }
@@ -43,10 +41,5 @@ dependencies {
     compile 'com.firebaseui:firebase-ui:0.4.3'
     compile 'com.google.android.gms:play-services-auth:9.2.1'
 }
-
-
-
-
-
 
 apply plugin: 'com.google.gms.google-services'

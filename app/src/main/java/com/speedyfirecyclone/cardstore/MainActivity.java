@@ -54,10 +54,11 @@ public class MainActivity extends AppCompatActivity {
         final Query query = myRef.orderByChild("favorite");
         mAdapter = new FirebaseListAdapter<Cardstructure>(this, Cardstructure.class, R.layout.cardlist_adapter, query) {
             @Override
-            protected void populateView(View view, Cardstructure model, int position) {
+            protected void populateView(View view, Cardstructure card, int position) {
 
                 TextView listCardname = (TextView) view.findViewById(R.id.listCardnameCardlistAdapter);
-                listCardname.setText(model.getCardTitle());
+                listCardname.setText(" "); //Workaround for bug where cardnames were displayed blank.
+                listCardname.setText(card.getCardTitle());
 
             }
         };
