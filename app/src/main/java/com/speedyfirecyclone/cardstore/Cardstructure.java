@@ -1,19 +1,19 @@
 package com.speedyfirecyclone.cardstore;
 
 public class Cardstructure {
-    String title;
-    String data;
-    String favorite;
+    public String cardTitle;
+    public String cardData;
+    public String favorite;
 
     public Cardstructure(String title, String data) {
-        this.title = title;
-        this.data = data;
+        this.cardTitle = title;
+        this.cardData = data;
         this.favorite = title;
     }
 
     public Cardstructure(String title, String data, String favorite) {
-        this.title = title;
-        this.data = data;
+        this.cardTitle = title;
+        this.cardData = data;
         this.favorite = favorite;
 
     }
@@ -22,19 +22,11 @@ public class Cardstructure {
     }
 
     public String getCardTitle() {
-        return title;
-    }
-
-    public void setCardTitle(String title) {
-        this.title = title;
+        return cardTitle;
     }
 
     public String getCardData() {
-        return data;
-    }
-
-    public void setCardData(String data) {
-        this.data = data;
+        return cardData;
     }
 
     public String getFavorite() {

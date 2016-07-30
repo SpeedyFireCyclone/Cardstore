@@ -12,7 +12,6 @@ import android.widget.TextView;
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -23,7 +22,6 @@ import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity {
 
-    static boolean persistentFirebase = false;
     protected FirebaseAnalytics mFirebaseAnalytics;
     ListView listViewMain;
     String userID;
@@ -35,10 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-        if (!persistentFirebase) {
-            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-            persistentFirebase = true;
-        }
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+
         database = FirebaseDatabase.getInstance();
         try {
             userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -57,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
             protected void populateView(View view, Cardstructure card, int position) {
 
                 TextView listCardname = (TextView) view.findViewById(R.id.listCardnameCardlistAdapter);
-                listCardname.setText(" "); //Workaround for bug where cardnames were displayed blank.
                 listCardname.setText(card.getCardTitle());
 
             }
@@ -71,35 +66,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-
-        myRef.addChildEventListener(
-                new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                        Cardstructure card = dataSnapshot.getValue(Cardstructure.class);
-                    }
-
-                    @Override
-                    public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                        Cardstructure card = dataSnapshot.getValue(Cardstructure.class);
-                    }
-
-                    @Override
-                    public void onChildRemoved(DataSnapshot dataSnapshot) {
-                        Cardstructure card = dataSnapshot.getValue(Cardstructure.class);
-                    }
-
-                    @Override
-                    public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                        Cardstructure card = dataSnapshot.getValue(Cardstructure.class);
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                });
-
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fabToCreate);
         fab.setOnClickListener(new View.OnClickListener() {
