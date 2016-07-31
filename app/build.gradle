@@ -6,9 +6,9 @@ android {
     defaultConfig {
         applicationId "com.speedyfirecyclone.cardstore"
         minSdkVersion 21
-        targetSdkVersion 23
-        versionCode 10
-        versionName "300716"
+        targetSdkVersion 24
+        versionCode 12
+        versionName "310716 r2"
     }
     buildTypes {
         release {
