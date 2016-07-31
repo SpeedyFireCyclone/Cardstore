@@ -22,6 +22,7 @@ import com.google.firebase.database.ValueEventListener;
 
 public class MainActivity extends AppCompatActivity {
 
+    static Boolean firebasePersistent = false;
     protected FirebaseAnalytics mFirebaseAnalytics;
     ListView listViewMain;
     String userID;
@@ -32,9 +33,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
+        if (!firebasePersistent) {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        }
+        firebasePersistent = true;
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-
         database = FirebaseDatabase.getInstance();
         try {
             userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
