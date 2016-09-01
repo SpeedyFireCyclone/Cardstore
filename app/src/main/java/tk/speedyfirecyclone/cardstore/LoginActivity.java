@@ -86,6 +86,10 @@ public class LoginActivity extends AppCompatActivity {
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }
 
+    public void anonymousSignIn(View view) {
+        this.mAuth.signInAnonymously().addOnCompleteListener(this, new C05814());
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -148,6 +152,17 @@ public class LoginActivity extends AppCompatActivity {
         Intent MainActivity = new Intent(this, MainActivity.class);
         startActivity(MainActivity);
         finish();
+    }
+
+    class C05814 implements OnCompleteListener<AuthResult> {
+        C05814() {
+        }
+
+        public void onComplete(Task<AuthResult> task) {
+            if (!task.isSuccessful()) {
+                Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
 }
