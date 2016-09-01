@@ -1,4 +1,4 @@
-package com.speedyfirecyclone.cardstore;
+package tk.speedyfirecyclone.cardstore;
 
 import android.content.Intent;
 import android.os.Bundle;

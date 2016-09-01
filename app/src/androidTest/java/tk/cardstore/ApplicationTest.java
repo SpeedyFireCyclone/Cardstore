@@ -1,4 +1,4 @@
-package com.speedyfirecyclone.cardstore;
+package tk.cardstore;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

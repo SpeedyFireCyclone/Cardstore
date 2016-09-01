@@ -1,8 +1,9 @@
-package com.speedyfirecyclone.cardstore;
+package tk.speedyfirecyclone.cardstore;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -18,12 +19,36 @@ import java.util.Map;
 
 public class DisplayCodeActivity extends Activity {
 
+    /**************************************************************
+     * getting from com.google.zxing.client.android.encode.QRCodeEncoder
+     * <p/>
+     * See the sites below
+     * http://code.google.com/p/zxing/
+     * http://code.google.com/p/zxing/source/browse/trunk/android/src/com/google/zxing/client/android/encode/EncodeActivity.java
+     * http://code.google.com/p/zxing/source/browse/trunk/android/src/com/google/zxing/client/android/encode/QRCodeEncoder.java
+     */
+
+    private static final int WHITE = 0xFFEEEEEE;
+    private static final int BLACK = 0xFF000000;
     public static BarcodeFormat format = null;
+
+    private static String guessAppropriateEncoding(CharSequence contents) {
+        // Very crude at the moment
+        for (int i = 0; i < contents.length(); i++) {
+            if (contents.charAt(i) > 0xFF) {
+                return "UTF-8";
+            }
+        }
+        return null;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_code);
+        WindowManager.LayoutParams lp = this.getWindow().getAttributes();
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL;
+        this.getWindow().setAttributes(lp);
 
         // barcode data
         String barcodeString = getIntent().getStringExtra("barcodeString");
@@ -91,18 +116,6 @@ public class DisplayCodeActivity extends Activity {
         return format;
     }
 
-    /**************************************************************
-     * getting from com.google.zxing.client.android.encode.QRCodeEncoder
-     * <p/>
-     * See the sites below
-     * http://code.google.com/p/zxing/
-     * http://code.google.com/p/zxing/source/browse/trunk/android/src/com/google/zxing/client/android/encode/EncodeActivity.java
-     * http://code.google.com/p/zxing/source/browse/trunk/android/src/com/google/zxing/client/android/encode/QRCodeEncoder.java
-     */
-
-    private static final int WHITE = 0xFFEEEEEE;
-    private static final int BLACK = 0xFF000000;
-
     Bitmap encodeAsBitmap(String contentsToEncode, BarcodeFormat format, int img_width, int img_height) throws WriterException {
         if (contentsToEncode == null) {
             return null;
@@ -110,7 +123,7 @@ public class DisplayCodeActivity extends Activity {
         Map<EncodeHintType, Object> hints = null;
         String encoding = guessAppropriateEncoding(contentsToEncode);
         if (encoding != null) {
-            hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
+            hints = new EnumMap<>(EncodeHintType.class);
             hints.put(EncodeHintType.CHARACTER_SET, encoding);
         }
         MultiFormatWriter writer = new MultiFormatWriter();
@@ -136,16 +149,6 @@ public class DisplayCodeActivity extends Activity {
                 Bitmap.Config.ARGB_8888);
         bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
         return bitmap;
-    }
-
-    private static String guessAppropriateEncoding(CharSequence contents) {
-        // Very crude at the moment
-        for (int i = 0; i < contents.length(); i++) {
-            if (contents.charAt(i) > 0xFF) {
-                return "UTF-8";
-            }
-        }
-        return null;
     }
 
 }
