@@ -8,18 +8,18 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:846652782731:android:e96e0b523cd3c27d",
+        "mobilesdk_app_id": "1:846652782731:android:9ded41b0dc5f23a5",
         "android_client_info": {
-          "package_name": "com.speedyfirecyclone.cardstore"
+          "package_name": "tk.speedyfirecyclone.cardstore"
         }
       },
       "oauth_client": [
         {
-          "client_id": "846652782731-37ucks3384baftj5r7b5fadfg9tpg0g8.apps.googleusercontent.com",
+          "client_id": "846652782731-lla15aomjt46n2v32rk1tnojv6tsl3dm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.speedyfirecyclone.cardstore",
-            "certificate_hash": "BCAB0C3BACF77F4F58D48E7B8F26DA94C19A2477"
+            "package_name": "tk.speedyfirecyclone.cardstore",
+            "certificate_hash": "561360BD25C7CFFB593E76F661727BBFDFFE8878"
           }
         },
         {
@@ -37,13 +37,8 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 2,
-          "other_platform_oauth_client": [
-            {
-              "client_id": "846652782731-gm14evv0f1sj3q7k8ml8j8v8ebi7n5jj.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "status": 1,
+          "other_platform_oauth_client": []
         },
         "ads_service": {
           "status": 2

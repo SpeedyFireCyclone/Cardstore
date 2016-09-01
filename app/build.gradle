@@ -4,11 +4,11 @@ android {
     compileSdkVersion 24
     buildToolsVersion '24.0.1'
     defaultConfig {
-        applicationId "com.speedyfirecyclone.cardstore"
+        applicationId "tk.speedyfirecyclone.cardstore"
         minSdkVersion 21
         targetSdkVersion 24
-        versionCode 12
-        versionName "310716 r2"
+        versionCode 3
+        versionName "200816"
     }
     buildTypes {
         release {

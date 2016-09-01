@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.speedyfirecyclone.cardstore.DisplayDetailsActivity">
+    tools:context="tk.speedyfirecyclone.cardstore.DisplayDetailsActivity">
 
     <android.support.v7.widget.CardView
         android:layout_width="match_parent"
@@ -48,9 +48,9 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:background="#ffffff"
+                android:onClick="favouriteToggle"
                 android:scaleType="fitCenter"
                 android:src="@drawable/favourite_border"
-                android:onClick="favouriteToggle"
                 android:tint="#757575" />
 
         </RelativeLayout>
