@@ -2,6 +2,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".MainActivity">
     <item
+        android:id="@+id/overflowCONVERT"
+        android:title="Link with Google account" />
+    <item
         android:id="@+id/overflowINFO"
         android:title="About" />
     <item

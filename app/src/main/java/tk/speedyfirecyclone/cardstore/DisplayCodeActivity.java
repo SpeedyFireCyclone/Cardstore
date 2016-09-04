@@ -85,7 +85,7 @@ public class DisplayCodeActivity extends Activity {
             format = BarcodeFormat.CODE_93;
         } else if (formatString.equals("CODE_128")) {
             format = BarcodeFormat.CODE_128;
-        } else if (formatString.equals("DATA_MATRIX")) {
+        } else if (formatString.equals("DATA_MATRIX")) { //FIXME: Needs work (blurry image).
             format = BarcodeFormat.DATA_MATRIX;
         } else if (formatString.equals("EAN_8")) {
             format = BarcodeFormat.EAN_8;
@@ -97,15 +97,15 @@ public class DisplayCodeActivity extends Activity {
             format = BarcodeFormat.PDF_417;
         } else if (formatString.equals("QR_CODE")) {
             format = BarcodeFormat.QR_CODE;
-        } else if (formatString.equals("RSS_14")) {
+        } else if (formatString.equals("RSS_14")) { //FIXME: Not generating.
             format = BarcodeFormat.RSS_14;
-        } else if (formatString.equals("RSS_EXPANDED")) {
+        } else if (formatString.equals("RSS_EXPANDED")) { //FIXME: Not generating.
             format = BarcodeFormat.RSS_EXPANDED;
         } else if (formatString.equals("UPC_A")) {
             format = BarcodeFormat.UPC_A;
         } else if (formatString.equals("UPC_E")) {
             format = BarcodeFormat.UPC_E;
-        } else if (formatString.equals("UPC_EAN_EXTENSION")) {
+        } else if (formatString.equals("UPC_EAN_EXTENSION")) { //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
             format = BarcodeFormat.UPC_EAN_EXTENSION;
         } else {
             //Safety measure to avoid null pointer exception.

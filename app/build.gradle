@@ -7,14 +7,21 @@ android {
         applicationId "tk.speedyfirecyclone.cardstore"
         minSdkVersion 21
         targetSdkVersion 24
-        versionCode 8
+        versionCode 9
         versionName "040916"
     }
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             zipAlignEnabled true
+        }
+        beta {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
+            versionNameSuffix '-BETA'
         }
         debug {
             versionNameSuffix '-DEBUG'
