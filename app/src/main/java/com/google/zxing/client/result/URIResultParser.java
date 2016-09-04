@@ -31,21 +31,9 @@ public final class URIResultParser extends ResultParser {
   // See http://www.ietf.org/rfc/rfc2396.txt
   private static final Pattern URL_WITH_PROTOCOL_PATTERN = Pattern.compile("[a-zA-Z][a-zA-Z0-9+-.]+:");
   private static final Pattern URL_WITHOUT_PROTOCOL_PATTERN = Pattern.compile(
-      "([a-zA-Z0-9\\-]+\\.)+[a-zA-Z]{2,}" + // host name elements
+          "([a-zA-Z0-9\\-]+\\.){1,6}[a-zA-Z]{2,}" + // host name elements; allow up to say 6 domain elements
       "(:\\d{1,5})?" + // maybe port
       "(/|\\?|$)"); // query, path or nothing
-
-  @Override
-  public URIParsedResult parse(Result result) {
-    String rawText = getMassagedText(result);
-    // We specifically handle the odd "URL" scheme here for simplicity and add "URI" for fun
-    // Assume anything starting this way really means to be a URI
-    if (rawText.startsWith("URL:") || rawText.startsWith("URI:")) {
-      return new URIParsedResult(rawText.substring(4).trim(), null);
-    }
-    rawText = rawText.trim();
-    return isBasicallyValidURI(rawText) ? new URIParsedResult(rawText, null) : null;
-  }
 
   static boolean isBasicallyValidURI(String uri) {
     if (uri.contains(" ")) {
@@ -58,6 +46,18 @@ public final class URIResultParser extends ResultParser {
     }
     m = URL_WITHOUT_PROTOCOL_PATTERN.matcher(uri);
     return m.find() && m.start() == 0;
+  }
+
+  @Override
+  public URIParsedResult parse(Result result) {
+    String rawText = getMassagedText(result);
+    // We specifically handle the odd "URL" scheme here for simplicity and add "URI" for fun
+    // Assume anything starting this way really means to be a URI
+    if (rawText.startsWith("URL:") || rawText.startsWith("URI:")) {
+      return new URIParsedResult(rawText.substring(4).trim(), null);
+    }
+    rawText = rawText.trim();
+    return isBasicallyValidURI(rawText) ? new URIParsedResult(rawText, null) : null;
   }
 
 }

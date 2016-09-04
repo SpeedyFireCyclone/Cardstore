@@ -49,22 +49,6 @@ public final class ITFReader extends OneDReader {
 
   private static final int W = 3; // Pixel width of a wide line
   private static final int N = 1; // Pixed width of a narrow line
-
-  /** Valid ITF lengths. Anything longer than the largest value is also allowed. */
-  private static final int[] DEFAULT_ALLOWED_LENGTHS = { 6, 8, 10, 12, 14 };
-
-  // Stores the actual narrow line width of the image being decoded.
-  private int narrowLineWidth = -1;
-
-  /**
-   * Start/end guard pattern.
-   *
-   * Note: The end pattern is reversed because the row is reversed before
-   * searching for the END_PATTERN
-   */
-  private static final int[] START_PATTERN = {N, N, N, N};
-  private static final int[] END_PATTERN_REVERSED = {N, N, W};
-
   /**
    * Patterns of Wide / Narrow lines to indicate each digit
    */
@@ -80,56 +64,20 @@ public final class ITFReader extends OneDReader {
       {W, N, N, W, N}, // 8
       {N, W, N, W, N}  // 9
   };
-
-  @Override
-  public Result decodeRow(int rowNumber, BitArray row, Map<DecodeHintType,?> hints)
-      throws FormatException, NotFoundException {
-
-    // Find out where the Middle section (payload) starts & ends
-    int[] startRange = decodeStart(row);
-    int[] endRange = decodeEnd(row);
-
-    StringBuilder result = new StringBuilder(20);
-    decodeMiddle(row, startRange[1], endRange[0], result);
-    String resultString = result.toString();
-
-    int[] allowedLengths = null;
-    if (hints != null) {
-      allowedLengths = (int[]) hints.get(DecodeHintType.ALLOWED_LENGTHS);
-
-    }
-    if (allowedLengths == null) {
-      allowedLengths = DEFAULT_ALLOWED_LENGTHS;
-    }
-
-    // To avoid false positives with 2D barcodes (and other patterns), make
-    // an assumption that the decoded string must be a 'standard' length if it's short
-    int length = resultString.length();
-    boolean lengthOK = false;
-    int maxAllowedLength = 0;
-    for (int allowedLength : allowedLengths) {
-      if (length == allowedLength) {
-        lengthOK = true;
-        break;
-      }
-      if (allowedLength > maxAllowedLength) {
-        maxAllowedLength = allowedLength;
-      }
-    }
-    if (!lengthOK && length > maxAllowedLength) {
-      lengthOK = true;
-    }
-    if (!lengthOK) {
-      throw FormatException.getFormatInstance();
-    }
-
-    return new Result(
-        resultString,
-        null, // no natural byte representation for these barcodes
-        new ResultPoint[] { new ResultPoint(startRange[1], (float) rowNumber),
-                            new ResultPoint(endRange[0], (float) rowNumber)},
-        BarcodeFormat.ITF);
-  }
+  /**
+   * Valid ITF lengths. Anything longer than the largest value is also allowed.
+   */
+  private static final int[] DEFAULT_ALLOWED_LENGTHS = {6, 8, 10, 12, 14};
+  /**
+   * Start/end guard pattern.
+   * <p/>
+   * Note: The end pattern is reversed because the row is reversed before
+   * searching for the END_PATTERN
+   */
+  private static final int[] START_PATTERN = {N, N, N, N};
+  private static final int[] END_PATTERN_REVERSED = {N, N, W};
+  // Stores the actual narrow line width of the image being decoded.
+  private int narrowLineWidth = -1;
 
   /**
    * @param row          row of black/white values to search
@@ -174,62 +122,6 @@ public final class ITFReader extends OneDReader {
   }
 
   /**
-   * Identify where the start of the middle / payload section starts.
-   *
-   * @param row row of black/white values to search
-   * @return Array, containing index of start of 'start block' and end of
-   *         'start block'
-   * @throws NotFoundException
-   */
-  int[] decodeStart(BitArray row) throws NotFoundException {
-    int endStart = skipWhiteSpace(row);
-    int[] startPattern = findGuardPattern(row, endStart, START_PATTERN);
-
-    // Determine the width of a narrow line in pixels. We can do this by
-    // getting the width of the start pattern and dividing by 4 because its
-    // made up of 4 narrow lines.
-    this.narrowLineWidth = (startPattern[1] - startPattern[0]) / 4;
-
-    validateQuietZone(row, startPattern[0]);
-
-    return startPattern;
-  }
-
-  /**
-   * The start & end patterns must be pre/post fixed by a quiet zone. This
-   * zone must be at least 10 times the width of a narrow line.  Scan back until
-   * we either get to the start of the barcode or match the necessary number of
-   * quiet zone pixels.
-   *
-   * Note: Its assumed the row is reversed when using this method to find
-   * quiet zone after the end pattern.
-   *
-   * ref: http://www.barcode-1.net/i25code.html
-   *
-   * @param row bit array representing the scanned barcode.
-   * @param startPattern index into row of the start or end pattern.
-   * @throws NotFoundException if the quiet zone cannot be found, a ReaderException is thrown.
-   */
-  private void validateQuietZone(BitArray row, int startPattern) throws NotFoundException {
-
-    int quietCount = this.narrowLineWidth * 10;  // expect to find this many pixels of quiet zone
-
-    // if there are not so many pixel at all let's try as many as possible
-    quietCount = quietCount < startPattern ? quietCount : startPattern;
-
-    for (int i = startPattern - 1; quietCount > 0 && i >= 0; i--) {
-      if (row.get(i)) {
-        break;
-      }
-      quietCount--;
-    }
-    if (quietCount != 0) {
-      // Unable to find the necessary number of quiet zone pixels.
-      throw NotFoundException.getNotFoundInstance();
-    }
-  }
-
-  /**
    * Skip all whitespace until we get to the first black line.
    *
    * @param row row of black/white values to search
@@ -247,48 +139,12 @@ public final class ITFReader extends OneDReader {
   }
 
   /**
-   * Identify where the end of the middle / payload section ends.
-   *
-   * @param row row of black/white values to search
-   * @return Array, containing index of start of 'end block' and end of 'end
-   *         block'
-   * @throws NotFoundException
-   */
-  int[] decodeEnd(BitArray row) throws NotFoundException {
-
-    // For convenience, reverse the row and then
-    // search from 'the start' for the end block
-    row.reverse();
-    try {
-      int endStart = skipWhiteSpace(row);
-      int[] endPattern = findGuardPattern(row, endStart, END_PATTERN_REVERSED);
-
-      // The start & end patterns must be pre/post fixed by a quiet zone. This
-      // zone must be at least 10 times the width of a narrow line.
-      // ref: http://www.barcode-1.net/i25code.html
-      validateQuietZone(row, endPattern[0]);
-
-      // Now recalculate the indices of where the 'endblock' starts & stops to
-      // accommodate
-      // the reversed nature of the search
-      int temp = endPattern[0];
-      endPattern[0] = row.getSize() - endPattern[1];
-      endPattern[1] = row.getSize() - temp;
-
-      return endPattern;
-    } finally {
-      // Put the row back the right way.
-      row.reverse();
-    }
-  }
-
-  /**
    * @param row       row of black/white values to search
    * @param rowOffset position to start search
    * @param pattern   pattern of counts of number of black and white pixels that are
    *                  being searched for as a pattern
    * @return start/end horizontal offset of guard pattern, as an array of two
-   *         ints
+   * ints
    * @throws NotFoundException if pattern is not found
    */
   private static int[] findGuardPattern(BitArray row,
@@ -348,6 +204,146 @@ public final class ITFReader extends OneDReader {
       return bestMatch;
     } else {
       throw NotFoundException.getNotFoundInstance();
+    }
+  }
+
+  @Override
+  public Result decodeRow(int rowNumber, BitArray row, Map<DecodeHintType,?> hints)
+      throws FormatException, NotFoundException {
+
+    // Find out where the Middle section (payload) starts & ends
+    int[] startRange = decodeStart(row);
+    int[] endRange = decodeEnd(row);
+
+    StringBuilder result = new StringBuilder(20);
+    decodeMiddle(row, startRange[1], endRange[0], result);
+    String resultString = result.toString();
+
+    int[] allowedLengths = null;
+    if (hints != null) {
+      allowedLengths = (int[]) hints.get(DecodeHintType.ALLOWED_LENGTHS);
+
+    }
+    if (allowedLengths == null) {
+      allowedLengths = DEFAULT_ALLOWED_LENGTHS;
+    }
+
+    // To avoid false positives with 2D barcodes (and other patterns), make
+    // an assumption that the decoded string must be a 'standard' length if it's short
+    int length = resultString.length();
+    boolean lengthOK = false;
+    int maxAllowedLength = 0;
+    for (int allowedLength : allowedLengths) {
+      if (length == allowedLength) {
+        lengthOK = true;
+        break;
+      }
+      if (allowedLength > maxAllowedLength) {
+        maxAllowedLength = allowedLength;
+      }
+    }
+    if (!lengthOK && length > maxAllowedLength) {
+      lengthOK = true;
+    }
+    if (!lengthOK) {
+      throw FormatException.getFormatInstance();
+    }
+
+    return new Result(
+        resultString,
+            null, // no natural byte representation for these barcodes
+            new ResultPoint[]{new ResultPoint(startRange[1], rowNumber),
+                            new ResultPoint(endRange[0], rowNumber)},
+        BarcodeFormat.ITF);
+  }
+
+  /**
+   * Identify where the start of the middle / payload section starts.
+   *
+   * @param row row of black/white values to search
+   * @return Array, containing index of start of 'start block' and end of
+   *         'start block'
+   */
+  private int[] decodeStart(BitArray row) throws NotFoundException {
+    int endStart = skipWhiteSpace(row);
+    int[] startPattern = findGuardPattern(row, endStart, START_PATTERN);
+
+    // Determine the width of a narrow line in pixels. We can do this by
+    // getting the width of the start pattern and dividing by 4 because its
+    // made up of 4 narrow lines.
+    this.narrowLineWidth = (startPattern[1] - startPattern[0]) / 4;
+
+    validateQuietZone(row, startPattern[0]);
+
+    return startPattern;
+  }
+
+  /**
+   * The start & end patterns must be pre/post fixed by a quiet zone. This
+   * zone must be at least 10 times the width of a narrow line.  Scan back until
+   * we either get to the start of the barcode or match the necessary number of
+   * quiet zone pixels.
+   *
+   * Note: Its assumed the row is reversed when using this method to find
+   * quiet zone after the end pattern.
+   *
+   * ref: http://www.barcode-1.net/i25code.html
+   *
+   * @param row bit array representing the scanned barcode.
+   * @param startPattern index into row of the start or end pattern.
+   * @throws NotFoundException if the quiet zone cannot be found
+   */
+  private void validateQuietZone(BitArray row, int startPattern) throws NotFoundException {
+
+    int quietCount = this.narrowLineWidth * 10;  // expect to find this many pixels of quiet zone
+
+    // if there are not so many pixel at all let's try as many as possible
+    quietCount = quietCount < startPattern ? quietCount : startPattern;
+
+    for (int i = startPattern - 1; quietCount > 0 && i >= 0; i--) {
+      if (row.get(i)) {
+        break;
+      }
+      quietCount--;
+    }
+    if (quietCount != 0) {
+      // Unable to find the necessary number of quiet zone pixels.
+      throw NotFoundException.getNotFoundInstance();
+    }
+  }
+
+  /**
+   * Identify where the end of the middle / payload section ends.
+   *
+   * @param row row of black/white values to search
+   * @return Array, containing index of start of 'end block' and end of 'end
+   *         block'
+   */
+  private int[] decodeEnd(BitArray row) throws NotFoundException {
+
+    // For convenience, reverse the row and then
+    // search from 'the start' for the end block
+    row.reverse();
+    try {
+      int endStart = skipWhiteSpace(row);
+      int[] endPattern = findGuardPattern(row, endStart, END_PATTERN_REVERSED);
+
+      // The start & end patterns must be pre/post fixed by a quiet zone. This
+      // zone must be at least 10 times the width of a narrow line.
+      // ref: http://www.barcode-1.net/i25code.html
+      validateQuietZone(row, endPattern[0]);
+
+      // Now recalculate the indices of where the 'endblock' starts & stops to
+      // accommodate
+      // the reversed nature of the search
+      int temp = endPattern[0];
+      endPattern[0] = row.getSize() - endPattern[1];
+      endPattern[1] = row.getSize() - temp;
+
+      return endPattern;
+    } finally {
+      // Put the row back the right way.
+      row.reverse();
     }
   }
 

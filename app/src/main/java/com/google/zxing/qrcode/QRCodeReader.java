@@ -47,66 +47,6 @@ public class QRCodeReader implements Reader {
 
   private final Decoder decoder = new Decoder();
 
-  protected final Decoder getDecoder() {
-    return decoder;
-  }
-
-  /**
-   * Locates and decodes a QR code in an image.
-   *
-   * @return a String representing the content encoded by the QR code
-   * @throws NotFoundException if a QR code cannot be found
-   * @throws FormatException if a QR code cannot be decoded
-   * @throws ChecksumException if error correction fails
-   */
-  @Override
-  public Result decode(BinaryBitmap image) throws NotFoundException, ChecksumException, FormatException {
-    return decode(image, null);
-  }
-
-  @Override
-  public final Result decode(BinaryBitmap image, Map<DecodeHintType,?> hints)
-      throws NotFoundException, ChecksumException, FormatException {
-    DecoderResult decoderResult;
-    ResultPoint[] points;
-    if (hints != null && hints.containsKey(DecodeHintType.PURE_BARCODE)) {
-      BitMatrix bits = extractPureBits(image.getBlackMatrix());
-      decoderResult = decoder.decode(bits, hints);
-      points = NO_POINTS;
-    } else {
-      DetectorResult detectorResult = new Detector(image.getBlackMatrix()).detect(hints);
-      decoderResult = decoder.decode(detectorResult.getBits(), hints);
-      points = detectorResult.getPoints();
-    }
-
-    // If the code was mirrored: swap the bottom-left and the top-right points.
-    if (decoderResult.getOther() instanceof QRCodeDecoderMetaData) {
-      ((QRCodeDecoderMetaData) decoderResult.getOther()).applyMirroredCorrection(points);
-    }
-
-    Result result = new Result(decoderResult.getText(), decoderResult.getRawBytes(), points, BarcodeFormat.QR_CODE);
-    List<byte[]> byteSegments = decoderResult.getByteSegments();
-    if (byteSegments != null) {
-      result.putMetadata(ResultMetadataType.BYTE_SEGMENTS, byteSegments);
-    }
-    String ecLevel = decoderResult.getECLevel();
-    if (ecLevel != null) {
-      result.putMetadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, ecLevel);
-    }
-    if (decoderResult.hasStructuredAppend()) {
-      result.putMetadata(ResultMetadataType.STRUCTURED_APPEND_SEQUENCE,
-                         decoderResult.getStructuredAppendSequenceNumber());
-      result.putMetadata(ResultMetadataType.STRUCTURED_APPEND_PARITY,
-                         decoderResult.getStructuredAppendParity());
-    }
-    return result;
-  }
-
-  @Override
-  public void reset() {
-    // do nothing
-  }
-
   /**
    * This method detects a code in a "pure" image -- that is, pure monochrome image
    * which contains only an unrotated, unskewed, image of a code, with some white border
@@ -129,7 +69,7 @@ public class QRCodeReader implements Reader {
     int bottom = rightBottomBlack[1];
     int left = leftTopBlack[0];
     int right = rightBottomBlack[0];
-    
+
     // Sanity check!
     if (left >= right || top >= bottom) {
       throw NotFoundException.getNotFoundInstance();
@@ -139,6 +79,10 @@ public class QRCodeReader implements Reader {
       // Special case, where bottom-right module wasn't black so we found something else in the last row
       // Assume it's a square, so use height as the width
       right = left + (bottom - top);
+      if (right >= image.getWidth()) {
+        // Abort if that would not make sense -- off image
+        throw NotFoundException.getNotFoundInstance();
+      }
     }
 
     int matrixWidth = Math.round((right - left + 1) / moduleSize);
@@ -157,7 +101,7 @@ public class QRCodeReader implements Reader {
     int nudge = (int) (moduleSize / 2.0f);
     top += nudge;
     left += nudge;
-    
+
     // But careful that this does not sample off the edge
     // "right" is the farthest-right valid pixel location -- right+1 is not necessarily
     // This is positive by how much the inner x loop below would be too large
@@ -213,6 +157,66 @@ public class QRCodeReader implements Reader {
       throw NotFoundException.getNotFoundInstance();
     }
     return (x - leftTopBlack[0]) / 7.0f;
+  }
+
+  protected final Decoder getDecoder() {
+    return decoder;
+  }
+
+  /**
+   * Locates and decodes a QR code in an image.
+   *
+   * @return a String representing the content encoded by the QR code
+   * @throws NotFoundException if a QR code cannot be found
+   * @throws FormatException   if a QR code cannot be decoded
+   * @throws ChecksumException if error correction fails
+   */
+  @Override
+  public Result decode(BinaryBitmap image) throws NotFoundException, ChecksumException, FormatException {
+    return decode(image, null);
+  }
+
+  @Override
+  public final Result decode(BinaryBitmap image, Map<DecodeHintType, ?> hints)
+          throws NotFoundException, ChecksumException, FormatException {
+    DecoderResult decoderResult;
+    ResultPoint[] points;
+    if (hints != null && hints.containsKey(DecodeHintType.PURE_BARCODE)) {
+      BitMatrix bits = extractPureBits(image.getBlackMatrix());
+      decoderResult = decoder.decode(bits, hints);
+      points = NO_POINTS;
+    } else {
+      DetectorResult detectorResult = new Detector(image.getBlackMatrix()).detect(hints);
+      decoderResult = decoder.decode(detectorResult.getBits(), hints);
+      points = detectorResult.getPoints();
+    }
+
+    // If the code was mirrored: swap the bottom-left and the top-right points.
+    if (decoderResult.getOther() instanceof QRCodeDecoderMetaData) {
+      ((QRCodeDecoderMetaData) decoderResult.getOther()).applyMirroredCorrection(points);
+    }
+
+    Result result = new Result(decoderResult.getText(), decoderResult.getRawBytes(), points, BarcodeFormat.QR_CODE);
+    List<byte[]> byteSegments = decoderResult.getByteSegments();
+    if (byteSegments != null) {
+      result.putMetadata(ResultMetadataType.BYTE_SEGMENTS, byteSegments);
+    }
+    String ecLevel = decoderResult.getECLevel();
+    if (ecLevel != null) {
+      result.putMetadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, ecLevel);
+    }
+    if (decoderResult.hasStructuredAppend()) {
+      result.putMetadata(ResultMetadataType.STRUCTURED_APPEND_SEQUENCE,
+              decoderResult.getStructuredAppendSequenceNumber());
+      result.putMetadata(ResultMetadataType.STRUCTURED_APPEND_PARITY,
+              decoderResult.getStructuredAppendParity());
+    }
+    return result;
+  }
+
+  @Override
+  public void reset() {
+    // do nothing
   }
 
 }

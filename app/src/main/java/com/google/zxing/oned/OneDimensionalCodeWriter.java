@@ -31,46 +31,6 @@ import java.util.Map;
  */
 public abstract class OneDimensionalCodeWriter implements Writer {
 
-  @Override
-  public final BitMatrix encode(String contents, BarcodeFormat format, int width, int height)
-      throws WriterException {
-    return encode(contents, format, width, height, null);
-  }
-
-  /**
-   * Encode the contents following specified format.
-   * {@code width} and {@code height} are required size. This method may return bigger size
-   * {@code BitMatrix} when specified size is too small. The user can set both {@code width} and
-   * {@code height} to zero to get minimum size barcode. If negative value is set to {@code width}
-   * or {@code height}, {@code IllegalArgumentException} is thrown.
-   */
-  @Override
-  public BitMatrix encode(String contents,
-                          BarcodeFormat format,
-                          int width,
-                          int height,
-                          Map<EncodeHintType,?> hints) throws WriterException {
-    if (contents.isEmpty()) {
-      throw new IllegalArgumentException("Found empty contents");
-    }
-
-    if (width < 0 || height < 0) {
-      throw new IllegalArgumentException("Negative size is not allowed. Input: "
-                                             + width + 'x' + height);
-    }
-
-    int sidesMargin = getDefaultMargin();
-    if (hints != null) {
-      Integer sidesMarginInt = (Integer) hints.get(EncodeHintType.MARGIN);
-      if (sidesMarginInt != null) {
-        sidesMargin = sidesMarginInt;
-      }
-    }
-
-    boolean[] code = encode(contents);
-    return renderResult(code, width, height, sidesMargin);
-  }
-
   /**
    * @return a byte array of horizontal pixels (0 = white, 1 = black)
    */
@@ -93,7 +53,6 @@ public abstract class OneDimensionalCodeWriter implements Writer {
     return output;
   }
 
-
   /**
    * @param target encode black/white pattern into this array
    * @param pos position to start encoding at in {@code target}
@@ -112,6 +71,43 @@ public abstract class OneDimensionalCodeWriter implements Writer {
       color = !color; // flip color after each segment
     }
     return numAdded;
+  }
+
+  @Override
+  public final BitMatrix encode(String contents, BarcodeFormat format, int width, int height)
+          throws WriterException {
+    return encode(contents, format, width, height, null);
+  }
+
+  /**
+   * Encode the contents following specified format.
+   * {@code width} and {@code height} are required size. This method may return bigger size
+   * {@code BitMatrix} when specified size is too small. The user can set both {@code width} and
+   * {@code height} to zero to get minimum size barcode. If negative value is set to {@code width}
+   * or {@code height}, {@code IllegalArgumentException} is thrown.
+   */
+  @Override
+  public BitMatrix encode(String contents,
+                          BarcodeFormat format,
+                          int width,
+                          int height,
+                          Map<EncodeHintType, ?> hints) throws WriterException {
+    if (contents.isEmpty()) {
+      throw new IllegalArgumentException("Found empty contents");
+    }
+
+    if (width < 0 || height < 0) {
+      throw new IllegalArgumentException("Negative size is not allowed. Input: "
+              + width + 'x' + height);
+    }
+
+    int sidesMargin = getDefaultMargin();
+    if (hints != null && hints.containsKey(EncodeHintType.MARGIN)) {
+      sidesMargin = Integer.parseInt(hints.get(EncodeHintType.MARGIN).toString());
+    }
+
+    boolean[] code = encode(contents);
+    return renderResult(code, width, height, sidesMargin);
   }
 
   public int getDefaultMargin() {

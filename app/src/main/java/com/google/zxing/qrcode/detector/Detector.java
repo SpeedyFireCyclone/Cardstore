@@ -45,6 +45,81 @@ public class Detector {
     this.image = image;
   }
 
+  private static PerspectiveTransform createTransform(ResultPoint topLeft,
+                                                      ResultPoint topRight,
+                                                      ResultPoint bottomLeft,
+                                                      ResultPoint alignmentPattern,
+                                                      int dimension) {
+    float dimMinusThree = dimension - 3.5f;
+    float bottomRightX;
+    float bottomRightY;
+    float sourceBottomRightX;
+    float sourceBottomRightY;
+    if (alignmentPattern != null) {
+      bottomRightX = alignmentPattern.getX();
+      bottomRightY = alignmentPattern.getY();
+      sourceBottomRightX = dimMinusThree - 3.0f;
+      sourceBottomRightY = sourceBottomRightX;
+    } else {
+      // Don't have an alignment pattern, just make up the bottom-right point
+      bottomRightX = (topRight.getX() - topLeft.getX()) + bottomLeft.getX();
+      bottomRightY = (topRight.getY() - topLeft.getY()) + bottomLeft.getY();
+      sourceBottomRightX = dimMinusThree;
+      sourceBottomRightY = dimMinusThree;
+    }
+
+    return PerspectiveTransform.quadrilateralToQuadrilateral(
+            3.5f,
+            3.5f,
+            dimMinusThree,
+            3.5f,
+            sourceBottomRightX,
+            sourceBottomRightY,
+            3.5f,
+            dimMinusThree,
+            topLeft.getX(),
+            topLeft.getY(),
+            topRight.getX(),
+            topRight.getY(),
+            bottomRightX,
+            bottomRightY,
+            bottomLeft.getX(),
+            bottomLeft.getY());
+  }
+
+  private static BitMatrix sampleGrid(BitMatrix image,
+                                      PerspectiveTransform transform,
+                                      int dimension) throws NotFoundException {
+
+    GridSampler sampler = GridSampler.getInstance();
+    return sampler.sampleGrid(image, dimension, dimension, transform);
+  }
+
+  /**
+   * <p>Computes the dimension (number of modules on a size) of the QR Code based on the position
+   * of the finder patterns and estimated module size.</p>
+   */
+  private static int computeDimension(ResultPoint topLeft,
+                                      ResultPoint topRight,
+                                      ResultPoint bottomLeft,
+                                      float moduleSize) throws NotFoundException {
+    int tltrCentersDimension = MathUtils.round(ResultPoint.distance(topLeft, topRight) / moduleSize);
+    int tlblCentersDimension = MathUtils.round(ResultPoint.distance(topLeft, bottomLeft) / moduleSize);
+    int dimension = ((tltrCentersDimension + tlblCentersDimension) / 2) + 7;
+    switch (dimension & 0x03) { // mod 4
+      case 0:
+        dimension++;
+        break;
+      // 1? do nothing
+      case 2:
+        dimension--;
+        break;
+      case 3:
+        throw NotFoundException.getNotFoundInstance();
+    }
+    return dimension;
+  }
+
   protected final BitMatrix getImage() {
     return image;
   }
@@ -108,7 +183,7 @@ public class Detector {
 
       // Estimate that alignment pattern is closer by 3 modules
       // from "bottom right" to known top left location
-      float correctionToTopLeft = 1.0f - 3.0f / (float) modulesBetweenFPCenters;
+      float correctionToTopLeft = 1.0f - 3.0f / modulesBetweenFPCenters;
       int estAlignmentX = (int) (topLeft.getX() + correctionToTopLeft * (bottomRightX - topLeft.getX()));
       int estAlignmentY = (int) (topLeft.getY() + correctionToTopLeft * (bottomRightY - topLeft.getY()));
 
@@ -118,7 +193,7 @@ public class Detector {
           alignmentPattern = findAlignmentInRegion(moduleSize,
               estAlignmentX,
               estAlignmentY,
-              (float) i);
+                  i);
           break;
         } catch (NotFoundException re) {
           // try next round
@@ -139,81 +214,6 @@ public class Detector {
       points = new ResultPoint[]{bottomLeft, topLeft, topRight, alignmentPattern};
     }
     return new DetectorResult(bits, points);
-  }
-
-  private static PerspectiveTransform createTransform(ResultPoint topLeft,
-                                                      ResultPoint topRight,
-                                                      ResultPoint bottomLeft,
-                                                      ResultPoint alignmentPattern,
-                                                      int dimension) {
-    float dimMinusThree = (float) dimension - 3.5f;
-    float bottomRightX;
-    float bottomRightY;
-    float sourceBottomRightX;
-    float sourceBottomRightY;
-    if (alignmentPattern != null) {
-      bottomRightX = alignmentPattern.getX();
-      bottomRightY = alignmentPattern.getY();
-      sourceBottomRightX = dimMinusThree - 3.0f;
-      sourceBottomRightY = sourceBottomRightX;
-    } else {
-      // Don't have an alignment pattern, just make up the bottom-right point
-      bottomRightX = (topRight.getX() - topLeft.getX()) + bottomLeft.getX();
-      bottomRightY = (topRight.getY() - topLeft.getY()) + bottomLeft.getY();
-      sourceBottomRightX = dimMinusThree;
-      sourceBottomRightY = dimMinusThree;
-    }
-
-    return PerspectiveTransform.quadrilateralToQuadrilateral(
-        3.5f,
-        3.5f,
-        dimMinusThree,
-        3.5f,
-        sourceBottomRightX,
-        sourceBottomRightY,
-        3.5f,
-        dimMinusThree,
-        topLeft.getX(),
-        topLeft.getY(),
-        topRight.getX(),
-        topRight.getY(),
-        bottomRightX,
-        bottomRightY,
-        bottomLeft.getX(),
-        bottomLeft.getY());
-  }
-
-  private static BitMatrix sampleGrid(BitMatrix image,
-                                      PerspectiveTransform transform,
-                                      int dimension) throws NotFoundException {
-
-    GridSampler sampler = GridSampler.getInstance();
-    return sampler.sampleGrid(image, dimension, dimension, transform);
-  }
-
-  /**
-   * <p>Computes the dimension (number of modules on a size) of the QR Code based on the position
-   * of the finder patterns and estimated module size.</p>
-   */
-  private static int computeDimension(ResultPoint topLeft,
-                                      ResultPoint topRight,
-                                      ResultPoint bottomLeft,
-                                      float moduleSize) throws NotFoundException {
-    int tltrCentersDimension = MathUtils.round(ResultPoint.distance(topLeft, topRight) / moduleSize);
-    int tlblCentersDimension = MathUtils.round(ResultPoint.distance(topLeft, bottomLeft) / moduleSize);
-    int dimension = ((tltrCentersDimension + tlblCentersDimension) / 2) + 7;
-    switch (dimension & 0x03) { // mod 4
-      case 0:
-        dimension++;
-        break;
-        // 1? do nothing
-      case 2:
-        dimension--;
-        break;
-      case 3:
-        throw NotFoundException.getNotFoundInstance();
-    }
-    return dimension;
   }
 
   /**
@@ -271,20 +271,20 @@ public class Detector {
     float scale = 1.0f;
     int otherToX = fromX - (toX - fromX);
     if (otherToX < 0) {
-      scale = (float) fromX / (float) (fromX - otherToX);
+      scale = fromX / (float) (fromX - otherToX);
       otherToX = 0;
     } else if (otherToX >= image.getWidth()) {
-      scale = (float) (image.getWidth() - 1 - fromX) / (float) (otherToX - fromX);
+      scale = (image.getWidth() - 1 - fromX) / (float) (otherToX - fromX);
       otherToX = image.getWidth() - 1;
     }
     int otherToY = (int) (fromY - (toY - fromY) * scale);
 
     scale = 1.0f;
     if (otherToY < 0) {
-      scale = (float) fromY / (float) (fromY - otherToY);
+      scale = fromY / (float) (fromY - otherToY);
       otherToY = 0;
     } else if (otherToY >= image.getHeight()) {
-      scale = (float) (image.getHeight() - 1 - fromY) / (float) (otherToY - fromY);
+      scale = (image.getHeight() - 1 - fromY) / (float) (otherToY - fromY);
       otherToY = image.getHeight() - 1;
     }
     otherToX = (int) (fromX + (otherToX - fromX) * scale);

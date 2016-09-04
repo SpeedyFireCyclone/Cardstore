@@ -33,6 +33,7 @@ import com.google.zxing.NotFoundException;
 import com.google.zxing.Result;
 import com.google.zxing.ResultPoint;
 import com.google.zxing.common.BitArray;
+import com.google.zxing.common.detector.MathUtils;
 import com.google.zxing.oned.rss.AbstractRSSReader;
 import com.google.zxing.oned.rss.DataCharacter;
 import com.google.zxing.oned.rss.FinderPattern;
@@ -40,10 +41,10 @@ import com.google.zxing.oned.rss.RSSUtils;
 import com.google.zxing.oned.rss.expanded.decoders.AbstractExpandedDecoder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
 
 /**
  * @author Pablo Orduña, University of Deusto (pablo.orduna@deusto.es)
@@ -117,133 +118,6 @@ public final class RSSExpandedReader extends AbstractRSSReader {
   private final int [] startEnd = new int[2];
   private boolean startFromEven;
 
-  @Override
-  public Result decodeRow(int rowNumber,
-                          BitArray row,
-                          Map<DecodeHintType,?> hints) throws NotFoundException, FormatException {
-    // Rows can start with even pattern in case in prev rows there where odd number of patters.
-    // So lets try twice
-    this.pairs.clear();
-    this.startFromEven = false;
-    try {
-      List<ExpandedPair> pairs = decodeRow2pairs(rowNumber, row);
-      return constructResult(pairs);
-    } catch (NotFoundException e) {
-      // OK
-    }
-
-    this.pairs.clear();
-    this.startFromEven = true;
-    List<ExpandedPair> pairs = decodeRow2pairs(rowNumber, row);
-    return constructResult(pairs);
-  }
-
-  @Override
-  public void reset() {
-    this.pairs.clear();
-    this.rows.clear();
-  }
-
-  // Not private for testing
-  List<ExpandedPair> decodeRow2pairs(int rowNumber, BitArray row) throws NotFoundException {
-    try {
-      while (true){
-        ExpandedPair nextPair = retrieveNextPair(row, this.pairs, rowNumber);
-        this.pairs.add(nextPair);
-        // exit this loop when retrieveNextPair() fails and throws
-      }
-    } catch (NotFoundException nfe) {
-      if (this.pairs.isEmpty()) {
-        throw nfe;
-      }
-    }
-
-    // TODO: verify sequence of finder patterns as in checkPairSequence()
-    if (checkChecksum()) {
-      return this.pairs;
-    }
-    
-    boolean tryStackedDecode = !this.rows.isEmpty();
-    boolean wasReversed = false; // TODO: deal with reversed rows
-    storeRow(rowNumber, wasReversed);
-    if (tryStackedDecode) {
-      // When the image is 180-rotated, then rows are sorted in wrong direction.
-      // Try twice with both the directions.
-      List<ExpandedPair> ps = checkRows(false);
-      if (ps != null) {
-        return ps;
-      }
-      ps = checkRows(true);
-      if (ps != null) {
-        return ps;
-      }
-    }
-    
-    throw NotFoundException.getNotFoundInstance();
-  }
-
-  private List<ExpandedPair> checkRows(boolean reverse) {
-    // Limit number of rows we are checking
-    // We use recursive algorithm with pure complexity and don't want it to take forever
-    // Stacked barcode can have up to 11 rows, so 25 seems reasonable enough
-    if (this.rows.size() > 25) {
-      this.rows.clear();  // We will never have a chance to get result, so clear it
-      return null;
-    }
-
-    this.pairs.clear();
-    if (reverse) {
-      Collections.reverse(this.rows);
-    }
-
-    List<ExpandedPair> ps = null;
-    try {
-      ps = checkRows(new ArrayList<ExpandedRow>(), 0);
-    } catch (NotFoundException e) {
-      // OK
-    }
-
-    if (reverse) {
-      Collections.reverse(this.rows);
-    }
-
-    return ps;
-  }
-
-  // Try to construct a valid rows sequence
-  // Recursion is used to implement backtracking
-  private List<ExpandedPair> checkRows(List<ExpandedRow> collectedRows, int currentRow) throws NotFoundException {
-    for (int i = currentRow; i < rows.size(); i++) {
-      ExpandedRow row = rows.get(i);
-      this.pairs.clear();
-      int size = collectedRows.size();
-      for (int j = 0; j < size; j++) {
-        this.pairs.addAll(collectedRows.get(j).getPairs());
-      }
-      this.pairs.addAll(row.getPairs());
-
-      if (!isValidSequence(this.pairs)) {
-        continue;
-      }
-
-      if (checkChecksum()) {
-        return this.pairs;
-      }
-
-      List<ExpandedRow> rs = new ArrayList<>();
-      rs.addAll(collectedRows);
-      rs.add(row);
-      try {
-        // Recursion: try to add more rows
-        return checkRows(rs, i + 1);
-      } catch (NotFoundException e) {
-        // We failed, try the next candidate
-      }
-    }
-
-    throw NotFoundException.getNotFoundInstance();
-  }
-
   // Whether the pairs form a valid find pattern seqience,
   // either complete or a prefix
   private static boolean isValidSequence(List<ExpandedPair> pairs) {
@@ -268,41 +142,9 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     return false;
   }
 
-  private void storeRow(int rowNumber, boolean wasReversed) {
-    // Discard if duplicate above or below; otherwise insert in order by row number.
-    int insertPos = 0;
-    boolean prevIsSame = false;
-    boolean nextIsSame = false;
-    while (insertPos < this.rows.size()) {
-      ExpandedRow erow = this.rows.get(insertPos);
-      if (erow.getRowNumber() > rowNumber) {
-        nextIsSame = erow.isEquivalent(this.pairs);
-        break;
-      }
-      prevIsSame = erow.isEquivalent(this.pairs);
-      insertPos++;
-    }
-    if (nextIsSame || prevIsSame) {
-      return;
-    }
-
-    // When the row was partially decoded (e.g. 2 pairs found instead of 3),
-    // it will prevent us from detecting the barcode.
-    // Try to merge partial rows
-
-    // Check whether the row is part of an allready detected row
-    if (isPartialRow(this.pairs, this.rows)) {
-      return;
-    }
-
-    this.rows.add(insertPos, new ExpandedRow(this.pairs, rowNumber, wasReversed));
-
-    removePartialRows(this.pairs, this.rows);
-  }
-
-  // Remove all the rows that contains only specified pairs 
+  // Remove all the rows that contains only specified pairs
   private static void removePartialRows(List<ExpandedPair> pairs, List<ExpandedRow> rows) {
-    for (Iterator<ExpandedRow> iterator = rows.iterator(); iterator.hasNext();) {
+    for (Iterator<ExpandedRow> iterator = rows.iterator(); iterator.hasNext(); ) {
       ExpandedRow r = iterator.next();
       if (r.getPairs().size() == pairs.size()) {
         continue;
@@ -353,11 +195,6 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     return false;
   }
 
-  // Only used for unit testing
-  List<ExpandedRow> getRows() {
-    return this.rows;
-  }
-
   // Not private for unit testing
   static Result constructResult(List<ExpandedPair> pairs) throws NotFoundException, FormatException {
     BitArray binary = BitArrayBuilder.buildBitArray(pairs);
@@ -366,14 +203,202 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     String resultingString = decoder.parseInformation();
 
     ResultPoint[] firstPoints = pairs.get(0).getFinderPattern().getResultPoints();
-    ResultPoint[] lastPoints  = pairs.get(pairs.size() - 1).getFinderPattern().getResultPoints();
+    ResultPoint[] lastPoints = pairs.get(pairs.size() - 1).getFinderPattern().getResultPoints();
 
     return new Result(
-          resultingString,
-          null,
-          new ResultPoint[]{firstPoints[0], firstPoints[1], lastPoints[0], lastPoints[1]},
-          BarcodeFormat.RSS_EXPANDED
-      );
+            resultingString,
+            null,
+            new ResultPoint[]{firstPoints[0], firstPoints[1], lastPoints[0], lastPoints[1]},
+            BarcodeFormat.RSS_EXPANDED
+    );
+  }
+
+  private static int getNextSecondBar(BitArray row, int initialPos) {
+    int currentPos;
+    if (row.get(initialPos)) {
+      currentPos = row.getNextUnset(initialPos);
+      currentPos = row.getNextSet(currentPos);
+    } else {
+      currentPos = row.getNextSet(initialPos);
+      currentPos = row.getNextUnset(currentPos);
+    }
+    return currentPos;
+  }
+
+  private static void reverseCounters(int[] counters) {
+    int length = counters.length;
+    for (int i = 0; i < length / 2; ++i) {
+      int tmp = counters[i];
+      counters[i] = counters[length - i - 1];
+      counters[length - i - 1] = tmp;
+    }
+  }
+
+  private static boolean isNotA1left(FinderPattern pattern, boolean isOddPattern, boolean leftChar) {
+    // A1: pattern.getValue is 0 (A), and it's an oddPattern, and it is a left char
+    return !(pattern.getValue() == 0 && isOddPattern && leftChar);
+  }
+
+  @Override
+  public Result decodeRow(int rowNumber,
+                          BitArray row,
+                          Map<DecodeHintType,?> hints) throws NotFoundException, FormatException {
+    // Rows can start with even pattern in case in prev rows there where odd number of patters.
+    // So lets try twice
+    this.pairs.clear();
+    this.startFromEven = false;
+    try {
+      List<ExpandedPair> pairs = decodeRow2pairs(rowNumber, row);
+      return constructResult(pairs);
+    } catch (NotFoundException e) {
+      // OK
+    }
+
+    this.pairs.clear();
+    this.startFromEven = true;
+    List<ExpandedPair> pairs = decodeRow2pairs(rowNumber, row);
+    return constructResult(pairs);
+  }
+
+  @Override
+  public void reset() {
+    this.pairs.clear();
+    this.rows.clear();
+  }
+
+  // Not private for testing
+  List<ExpandedPair> decodeRow2pairs(int rowNumber, BitArray row) throws NotFoundException {
+    try {
+      while (true) {
+        ExpandedPair nextPair = retrieveNextPair(row, this.pairs, rowNumber);
+        this.pairs.add(nextPair);
+        // exit this loop when retrieveNextPair() fails and throws
+      }
+    } catch (NotFoundException nfe) {
+      if (this.pairs.isEmpty()) {
+        throw nfe;
+      }
+    }
+
+    // TODO: verify sequence of finder patterns as in checkPairSequence()
+    if (checkChecksum()) {
+      return this.pairs;
+    }
+
+    boolean tryStackedDecode = !this.rows.isEmpty();
+    storeRow(rowNumber, false); // TODO: deal with reversed rows
+    if (tryStackedDecode) {
+      // When the image is 180-rotated, then rows are sorted in wrong direction.
+      // Try twice with both the directions.
+      List<ExpandedPair> ps = checkRows(false);
+      if (ps != null) {
+        return ps;
+      }
+      ps = checkRows(true);
+      if (ps != null) {
+        return ps;
+      }
+    }
+
+    throw NotFoundException.getNotFoundInstance();
+  }
+
+  private List<ExpandedPair> checkRows(boolean reverse) {
+    // Limit number of rows we are checking
+    // We use recursive algorithm with pure complexity and don't want it to take forever
+    // Stacked barcode can have up to 11 rows, so 25 seems reasonable enough
+    if (this.rows.size() > 25) {
+      this.rows.clear();  // We will never have a chance to get result, so clear it
+      return null;
+    }
+
+    this.pairs.clear();
+    if (reverse) {
+      Collections.reverse(this.rows);
+    }
+
+    List<ExpandedPair> ps = null;
+    try {
+      ps = checkRows(new ArrayList<ExpandedRow>(), 0);
+    } catch (NotFoundException e) {
+      // OK
+    }
+
+    if (reverse) {
+      Collections.reverse(this.rows);
+    }
+
+    return ps;
+  }
+
+  // Try to construct a valid rows sequence
+  // Recursion is used to implement backtracking
+  private List<ExpandedPair> checkRows(List<ExpandedRow> collectedRows, int currentRow) throws NotFoundException {
+    for (int i = currentRow; i < rows.size(); i++) {
+      ExpandedRow row = rows.get(i);
+      this.pairs.clear();
+      for (ExpandedRow collectedRow : collectedRows) {
+        this.pairs.addAll(collectedRow.getPairs());
+      }
+      this.pairs.addAll(row.getPairs());
+
+      if (!isValidSequence(this.pairs)) {
+        continue;
+      }
+
+      if (checkChecksum()) {
+        return this.pairs;
+      }
+
+      List<ExpandedRow> rs = new ArrayList<>();
+      rs.addAll(collectedRows);
+      rs.add(row);
+      try {
+        // Recursion: try to add more rows
+        return checkRows(rs, i + 1);
+      } catch (NotFoundException e) {
+        // We failed, try the next candidate
+      }
+    }
+
+    throw NotFoundException.getNotFoundInstance();
+  }
+
+  private void storeRow(int rowNumber, boolean wasReversed) {
+    // Discard if duplicate above or below; otherwise insert in order by row number.
+    int insertPos = 0;
+    boolean prevIsSame = false;
+    boolean nextIsSame = false;
+    while (insertPos < this.rows.size()) {
+      ExpandedRow erow = this.rows.get(insertPos);
+      if (erow.getRowNumber() > rowNumber) {
+        nextIsSame = erow.isEquivalent(this.pairs);
+        break;
+      }
+      prevIsSame = erow.isEquivalent(this.pairs);
+      insertPos++;
+    }
+    if (nextIsSame || prevIsSame) {
+      return;
+    }
+
+    // When the row was partially decoded (e.g. 2 pairs found instead of 3),
+    // it will prevent us from detecting the barcode.
+    // Try to merge partial rows
+
+    // Check whether the row is part of an allready detected row
+    if (isPartialRow(this.pairs, this.rows)) {
+      return;
+    }
+
+    this.rows.add(insertPos, new ExpandedRow(this.pairs, rowNumber, wasReversed));
+
+    removePartialRows(this.pairs, this.rows);
+  }
+
+  // Only used for unit testing
+  List<ExpandedRow> getRows() {
+    return this.rows;
   }
 
   private boolean checkChecksum() {
@@ -388,7 +413,7 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     int checksum = firstCharacter.getChecksumPortion();
     int s = 2;
 
-    for(int i = 1; i < this.pairs.size(); ++i){
+    for (int i = 1; i < this.pairs.size(); ++i) {
       ExpandedPair currentPair = this.pairs.get(i);
       checksum += currentPair.getLeftChar().getChecksumPortion();
       s++;
@@ -406,18 +431,6 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     return checkCharacterValue == checkCharacter.getValue();
   }
 
-  private static int getNextSecondBar(BitArray row, int initialPos){
-    int currentPos;
-    if (row.get(initialPos)) {
-      currentPos = row.getNextUnset(initialPos);
-      currentPos = row.getNextSet(currentPos);
-    } else {
-      currentPos = row.getNextSet(initialPos);
-      currentPos = row.getNextUnset(currentPos);
-    }
-    return currentPos;
-  }
-
   // not private for testing
   ExpandedPair retrieveNextPair(BitArray row, List<ExpandedPair> previousPairs, int rowNumber)
       throws NotFoundException {
@@ -430,33 +443,32 @@ public final class RSSExpandedReader extends AbstractRSSReader {
 
     boolean keepFinding = true;
     int forcedOffset = -1;
-    do{
+    do {
       this.findNextPair(row, previousPairs, forcedOffset);
       pattern = parseFoundFinderPattern(row, rowNumber, isOddPattern);
-      if (pattern == null){
+      if (pattern == null) {
         forcedOffset = getNextSecondBar(row, this.startEnd[0]);
       } else {
         keepFinding = false;
       }
-    }while(keepFinding);
+    } while (keepFinding);
 
     // When stacked symbol is split over multiple rows, there's no way to guess if this pair can be last or not.
     // boolean mayBeLast = checkPairSequence(previousPairs, pattern);
 
     DataCharacter leftChar  = this.decodeDataCharacter(row, pattern, isOddPattern, true);
-    
-    if (!previousPairs.isEmpty() && previousPairs.get(previousPairs.size()-1).mustBeLast()) {
+
+    if (!previousPairs.isEmpty() && previousPairs.get(previousPairs.size() - 1).mustBeLast()) {
       throw NotFoundException.getNotFoundInstance();
     }
-    
+
     DataCharacter rightChar;
     try {
       rightChar = this.decodeDataCharacter(row, pattern, isOddPattern, false);
-    } catch(NotFoundException ignored) {
+    } catch (NotFoundException ignored) {
       rightChar = null;
     }
-    boolean mayBeLast = true;
-    return new ExpandedPair(leftChar, rightChar, pattern, mayBeLast);
+    return new ExpandedPair(leftChar, rightChar, pattern, true);
   }
 
   private void findNextPair(BitArray row, List<ExpandedPair> previousPairs, int forcedOffset)
@@ -474,7 +486,7 @@ public final class RSSExpandedReader extends AbstractRSSReader {
       rowOffset = forcedOffset;
     } else if (previousPairs.isEmpty()) {
       rowOffset = 0;
-    } else{
+    } else {
       ExpandedPair lastPair = previousPairs.get(previousPairs.size() - 1);
       rowOffset = lastPair.getFinderPattern().getStartEnd()[1];
     }
@@ -503,7 +515,7 @@ public final class RSSExpandedReader extends AbstractRSSReader {
             reverseCounters(counters);
           }
 
-          if (isFinderPattern(counters)){
+          if (isFinderPattern(counters)) {
             this.startEnd[0] = patternStart;
             this.startEnd[1] = x;
             return;
@@ -529,22 +541,13 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     throw NotFoundException.getNotFoundInstance();
   }
 
-  private static void reverseCounters(int [] counters){
-    int length = counters.length;
-    for(int i = 0; i < length / 2; ++i){
-      int tmp = counters[i];
-      counters[i] = counters[length - i - 1];
-      counters[length - i - 1] = tmp;
-    }
-  }
-
   private FinderPattern parseFoundFinderPattern(BitArray row, int rowNumber, boolean oddPattern) {
     // Actually we found elements 2-5.
     int firstCounter;
     int start;
     int end;
 
-    if(oddPattern){
+    if (oddPattern) {
       // If pattern number is odd, we need to locate element 1 *before* the current block.
 
       int firstElementStart = this.startEnd[0] - 1;
@@ -558,7 +561,7 @@ public final class RSSExpandedReader extends AbstractRSSReader {
       start = firstElementStart;
       end = this.startEnd[1];
 
-    }else{
+    } else {
       // If pattern number is even, the pattern is reversed, so we need to locate element 1 *after* the current block.
 
       start = this.startEnd[0];
@@ -605,10 +608,10 @@ public final class RSSExpandedReader extends AbstractRSSReader {
         counters[i] = counters[j];
         counters[j] = temp;
       }
-    }//counters[] has the pixels of the module
+    } //counters[] has the pixels of the module
 
     int numModules = 17; //left and right data characters have all the same length
-    float elementWidth = (float) count(counters) / (float) numModules;
+    float elementWidth = MathUtils.sum(counters) / (float) numModules;
 
     // Sanity check: element width for pattern and the character should match
     float expectedElementWidth = (pattern.getStartEnd()[1] - pattern.getStartEnd()[0]) / 15.0f;
@@ -647,12 +650,12 @@ public final class RSSExpandedReader extends AbstractRSSReader {
 
     adjustOddEvenCounts(numModules);
 
-    int weightRowNumber = 4 * pattern.getValue() + (isOddPattern?0:2) + (leftChar?0:1) - 1;
+    int weightRowNumber = 4 * pattern.getValue() + (isOddPattern ? 0 : 2) + (leftChar ? 0 : 1) - 1;
 
     int oddSum = 0;
     int oddChecksumPortion = 0;
     for (int i = oddCounts.length - 1; i >= 0; i--) {
-      if(isNotA1left(pattern, isOddPattern, leftChar)){
+      if (isNotA1left(pattern, isOddPattern, leftChar)) {
         int weight = WEIGHTS[weightRowNumber][2 * i];
         oddChecksumPortion += oddCounts[i] * weight;
       }
@@ -661,7 +664,7 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     int evenChecksumPortion = 0;
     //int evenSum = 0;
     for (int i = evenCounts.length - 1; i >= 0; i--) {
-      if(isNotA1left(pattern, isOddPattern, leftChar)){
+      if (isNotA1left(pattern, isOddPattern, leftChar)) {
         int weight = WEIGHTS[weightRowNumber][2 * i + 1];
         evenChecksumPortion += evenCounts[i] * weight;
       }
@@ -685,18 +688,10 @@ public final class RSSExpandedReader extends AbstractRSSReader {
     return new DataCharacter(value, checksumPortion);
   }
 
-  private static boolean isNotA1left(FinderPattern pattern, boolean isOddPattern, boolean leftChar) {
-    // A1: pattern.getValue is 0 (A), and it's an oddPattern, and it is a left char
-    return !(pattern.getValue() == 0 && isOddPattern && leftChar);
-  }
-
   private void adjustOddEvenCounts(int numModules) throws NotFoundException {
 
-    int oddSum = count(this.getOddCounts());
-    int evenSum = count(this.getEvenCounts());
-    int mismatch = oddSum + evenSum - numModules;
-    boolean oddParityBad = (oddSum & 0x01) == 1;
-    boolean evenParityBad = (evenSum & 0x01) == 0;
+    int oddSum = MathUtils.sum(this.getOddCounts());
+    int evenSum = MathUtils.sum(this.getEvenCounts());
 
     boolean incrementOdd = false;
     boolean decrementOdd = false;
@@ -714,6 +709,9 @@ public final class RSSExpandedReader extends AbstractRSSReader {
       incrementEven = true;
     }
 
+    int mismatch = oddSum + evenSum - numModules;
+    boolean oddParityBad = (oddSum & 0x01) == 1;
+    boolean evenParityBad = (evenSum & 0x01) == 0;
     if (mismatch == 1) {
       if (oddParityBad) {
         if (evenParityBad) {

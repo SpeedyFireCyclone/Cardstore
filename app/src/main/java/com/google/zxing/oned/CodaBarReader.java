@@ -34,15 +34,6 @@ import java.util.Map;
  */
 public final class CodaBarReader extends OneDReader {
 
-  // These values are critical for determining how permissive the decoding
-  // will be. All stripe sizes must be within the window these define, as
-  // compared to the average stripe size.
-  private static final float MAX_ACCEPTABLE = 2.0f;
-  private static final float PADDING = 1.5f;
-
-  private static final String ALPHABET_STRING = "0123456789-$:/.+ABCD";
-  static final char[] ALPHABET = ALPHABET_STRING.toCharArray();
-
   /**
    * These represent the encodings of characters, as patterns of wide and narrow bars. The 7 least-significant bits of
    * each int correspond to the pattern of wide and narrow, with 1s representing "wide" and 0s representing narrow.
@@ -51,7 +42,13 @@ public final class CodaBarReader extends OneDReader {
       0x003, 0x006, 0x009, 0x060, 0x012, 0x042, 0x021, 0x024, 0x030, 0x048, // 0-9
       0x00c, 0x018, 0x045, 0x051, 0x054, 0x015, 0x01A, 0x029, 0x00B, 0x00E, // -$:/.+ABCD
   };
-
+  // These values are critical for determining how permissive the decoding
+  // will be. All stripe sizes must be within the window these define, as
+  // compared to the average stripe size.
+  private static final float MAX_ACCEPTABLE = 2.0f;
+  private static final float PADDING = 1.5f;
+  private static final String ALPHABET_STRING = "0123456789-$:/.+ABCD";
+  static final char[] ALPHABET = ALPHABET_STRING.toCharArray();
   // minimal number of characters that should be present (inclusing start and stop characters)
   // under normal circumstances this should be set to 3, but can be set higher
   // as a last-ditch attempt to reduce false positives.
@@ -76,6 +73,17 @@ public final class CodaBarReader extends OneDReader {
     counterLength = 0;
   }
 
+  static boolean arrayContains(char[] array, char key) {
+    if (array != null) {
+      for (char c : array) {
+        if (c == key) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   @Override
   public Result decodeRow(int rowNumber, BitArray row, Map<DecodeHintType,?> hints) throws NotFoundException {
 
@@ -93,7 +101,7 @@ public final class CodaBarReader extends OneDReader {
       // Hack: We store the position in the alphabet table into a
       // StringBuilder, so that we can access the decoded patterns in
       // validatePattern. We'll translate to the actual characters later.
-      decodeRowResult.append((char)charOffset);
+      decodeRowResult.append((char) charOffset);
       nextStart += 8;
       // Stop as soon as we see the end character.
       if (decodeRowResult.length() > 1 &&
@@ -147,21 +155,21 @@ public final class CodaBarReader extends OneDReader {
     for (int i = 0; i < startOffset; i++) {
       runningCount += counters[i];
     }
-    float left = (float) runningCount;
+    float left = runningCount;
     for (int i = startOffset; i < nextStart - 1; i++) {
       runningCount += counters[i];
     }
-    float right = (float) runningCount;
+    float right = runningCount;
     return new Result(
         decodeRowResult.toString(),
         null,
         new ResultPoint[]{
-            new ResultPoint(left, (float) rowNumber),
-            new ResultPoint(right, (float) rowNumber)},
+                new ResultPoint(left, rowNumber),
+                new ResultPoint(right, rowNumber)},
         BarcodeFormat.CODABAR);
   }
 
-  void validatePattern(int start) throws NotFoundException {
+  private void validatePattern(int start) throws NotFoundException {
     // First, sum up the total size of our four categories of stripe sizes;
     int[] sizes = {0, 0, 0, 0};
     int[] counts = {0, 0, 0, 0};
@@ -270,23 +278,12 @@ public final class CodaBarReader extends OneDReader {
         for (int j = i; j < i + 7; j++) {
           patternSize += counters[j];
         }
-        if (i == 1 || counters[i-1] >= patternSize / 2) {
+        if (i == 1 || counters[i - 1] >= patternSize / 2) {
           return i;
         }
       }
     }
     throw NotFoundException.getNotFoundInstance();
-  }
-
-  static boolean arrayContains(char[] array, char key) {
-    if (array != null) {
-      for (char c : array) {
-        if (c == key) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   // Assumes that counters[position] is a bar.

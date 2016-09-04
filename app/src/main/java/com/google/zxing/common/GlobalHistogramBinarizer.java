@@ -37,103 +37,13 @@ public class GlobalHistogramBinarizer extends Binarizer {
   private static final int LUMINANCE_SHIFT = 8 - LUMINANCE_BITS;
   private static final int LUMINANCE_BUCKETS = 1 << LUMINANCE_BITS;
   private static final byte[] EMPTY = new byte[0];
-
-  private byte[] luminances;
   private final int[] buckets;
+  private byte[] luminances;
 
   public GlobalHistogramBinarizer(LuminanceSource source) {
     super(source);
     luminances = EMPTY;
     buckets = new int[LUMINANCE_BUCKETS];
-  }
-
-  // Applies simple sharpening to the row data to improve performance of the 1D Readers.
-  @Override
-  public BitArray getBlackRow(int y, BitArray row) throws NotFoundException {
-    LuminanceSource source = getLuminanceSource();
-    int width = source.getWidth();
-    if (row == null || row.getSize() < width) {
-      row = new BitArray(width);
-    } else {
-      row.clear();
-    }
-
-    initArrays(width);
-    byte[] localLuminances = source.getRow(y, luminances);
-    int[] localBuckets = buckets;
-    for (int x = 0; x < width; x++) {
-      int pixel = localLuminances[x] & 0xff;
-      localBuckets[pixel >> LUMINANCE_SHIFT]++;
-    }
-    int blackPoint = estimateBlackPoint(localBuckets);
-
-    int left = localLuminances[0] & 0xff;
-    int center = localLuminances[1] & 0xff;
-    for (int x = 1; x < width - 1; x++) {
-      int right = localLuminances[x + 1] & 0xff;
-      // A simple -1 4 -1 box filter with a weight of 2.
-      int luminance = ((center * 4) - left - right) / 2;
-      if (luminance < blackPoint) {
-        row.set(x);
-      }
-      left = center;
-      center = right;
-    }
-    return row;
-  }
-
-  // Does not sharpen the data, as this call is intended to only be used by 2D Readers.
-  @Override
-  public BitMatrix getBlackMatrix() throws NotFoundException {
-    LuminanceSource source = getLuminanceSource();
-    int width = source.getWidth();
-    int height = source.getHeight();
-    BitMatrix matrix = new BitMatrix(width, height);
-
-    // Quickly calculates the histogram by sampling four rows from the image. This proved to be
-    // more robust on the blackbox tests than sampling a diagonal as we used to do.
-    initArrays(width);
-    int[] localBuckets = buckets;
-    for (int y = 1; y < 5; y++) {
-      int row = height * y / 5;
-      byte[] localLuminances = source.getRow(row, luminances);
-      int right = (width * 4) / 5;
-      for (int x = width / 5; x < right; x++) {
-        int pixel = localLuminances[x] & 0xff;
-        localBuckets[pixel >> LUMINANCE_SHIFT]++;
-      }
-    }
-    int blackPoint = estimateBlackPoint(localBuckets);
-
-    // We delay reading the entire image luminance until the black point estimation succeeds.
-    // Although we end up reading four rows twice, it is consistent with our motto of
-    // "fail quickly" which is necessary for continuous scanning.
-    byte[] localLuminances = source.getMatrix();
-    for (int y = 0; y < height; y++) {
-      int offset = y * width;
-      for (int x = 0; x< width; x++) {
-        int pixel = localLuminances[offset + x] & 0xff;
-        if (pixel < blackPoint) {
-          matrix.set(x, y);
-        }
-      }
-    }
-
-    return matrix;
-  }
-
-  @Override
-  public Binarizer createBinarizer(LuminanceSource source) {
-    return new GlobalHistogramBinarizer(source);
-  }
-
-  private void initArrays(int luminanceSize) {
-    if (luminances.length < luminanceSize) {
-      luminances = new byte[luminanceSize];
-    }
-    for (int x = 0; x < LUMINANCE_BUCKETS; x++) {
-      buckets[x] = 0;
-    }
   }
 
   private static int estimateBlackPoint(int[] buckets) throws NotFoundException {
@@ -191,6 +101,102 @@ public class GlobalHistogramBinarizer extends Binarizer {
     }
 
     return bestValley << LUMINANCE_SHIFT;
+  }
+
+  // Applies simple sharpening to the row data to improve performance of the 1D Readers.
+  @Override
+  public BitArray getBlackRow(int y, BitArray row) throws NotFoundException {
+    LuminanceSource source = getLuminanceSource();
+    int width = source.getWidth();
+    if (row == null || row.getSize() < width) {
+      row = new BitArray(width);
+    } else {
+      row.clear();
+    }
+
+    initArrays(width);
+    byte[] localLuminances = source.getRow(y, luminances);
+    int[] localBuckets = buckets;
+    for (int x = 0; x < width; x++) {
+      localBuckets[(localLuminances[x] & 0xff) >> LUMINANCE_SHIFT]++;
+    }
+    int blackPoint = estimateBlackPoint(localBuckets);
+
+    if (width < 3) {
+      // Special case for very small images
+      for (int x = 0; x < width; x++) {
+        if ((localLuminances[x] & 0xff) < blackPoint) {
+          row.set(x);
+        }
+      }
+    } else {
+      int left = localLuminances[0] & 0xff;
+      int center = localLuminances[1] & 0xff;
+      for (int x = 1; x < width - 1; x++) {
+        int right = localLuminances[x + 1] & 0xff;
+        // A simple -1 4 -1 box filter with a weight of 2.
+        if (((center * 4) - left - right) / 2 < blackPoint) {
+          row.set(x);
+        }
+        left = center;
+        center = right;
+      }
+    }
+    return row;
+  }
+
+  // Does not sharpen the data, as this call is intended to only be used by 2D Readers.
+  @Override
+  public BitMatrix getBlackMatrix() throws NotFoundException {
+    LuminanceSource source = getLuminanceSource();
+    int width = source.getWidth();
+    int height = source.getHeight();
+    BitMatrix matrix = new BitMatrix(width, height);
+
+    // Quickly calculates the histogram by sampling four rows from the image. This proved to be
+    // more robust on the blackbox tests than sampling a diagonal as we used to do.
+    initArrays(width);
+    int[] localBuckets = buckets;
+    for (int y = 1; y < 5; y++) {
+      int row = height * y / 5;
+      byte[] localLuminances = source.getRow(row, luminances);
+      int right = (width * 4) / 5;
+      for (int x = width / 5; x < right; x++) {
+        int pixel = localLuminances[x] & 0xff;
+        localBuckets[pixel >> LUMINANCE_SHIFT]++;
+      }
+    }
+    int blackPoint = estimateBlackPoint(localBuckets);
+
+    // We delay reading the entire image luminance until the black point estimation succeeds.
+    // Although we end up reading four rows twice, it is consistent with our motto of
+    // "fail quickly" which is necessary for continuous scanning.
+    byte[] localLuminances = source.getMatrix();
+    for (int y = 0; y < height; y++) {
+      int offset = y * width;
+      for (int x = 0; x < width; x++) {
+        int pixel = localLuminances[offset + x] & 0xff;
+        if (pixel < blackPoint) {
+          matrix.set(x, y);
+        }
+      }
+    }
+
+    return matrix;
+  }
+
+  @Override
+  public Binarizer createBinarizer(LuminanceSource source) {
+    return new GlobalHistogramBinarizer(source);
+  }
+
+  private void initArrays(int luminanceSize) {
+    if (luminances.length < luminanceSize) {
+      luminances = new byte[luminanceSize];
+    }
+    for (int x = 0; x < LUMINANCE_BUCKETS; x++) {
+      buckets[x] = 0;
+    }
   }
 
 }

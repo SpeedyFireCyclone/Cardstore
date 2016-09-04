@@ -19,6 +19,8 @@ package com.google.zxing.client.result;
 import java.util.regex.Pattern;
 
 /**
+ * A simple result type encapsulating a URI that has no further interpretation.
+ *
  * @author Sean Owen
  */
 public final class URIParsedResult extends ParsedResult {
@@ -32,6 +34,30 @@ public final class URIParsedResult extends ParsedResult {
     super(ParsedResultType.URI);
     this.uri = massageURI(uri);
     this.title = title;
+  }
+
+  /**
+   * Transforms a string that represents a URI into something more proper, by adding or canonicalizing
+   * the protocol.
+   */
+  private static String massageURI(String uri) {
+    uri = uri.trim();
+    int protocolEnd = uri.indexOf(':');
+    if (protocolEnd < 0 || isColonFollowedByPortNumber(uri, protocolEnd)) {
+      // No protocol, or found a colon, but it looks like it is after the host, so the protocol is still missing,
+      // so assume http
+      uri = "http://" + uri;
+    }
+    return uri;
+  }
+
+  private static boolean isColonFollowedByPortNumber(String uri, int protocolEnd) {
+    int start = protocolEnd + 1;
+    int nextSlash = uri.indexOf('/', start);
+    if (nextSlash < 0) {
+      nextSlash = uri.length();
+    }
+    return ResultParser.isSubstringOfDigits(uri, start, nextSlash - start);
   }
 
   public String getURI() {
@@ -60,30 +86,6 @@ public final class URIParsedResult extends ParsedResult {
     maybeAppend(title, result);
     maybeAppend(uri, result);
     return result.toString();
-  }
-
-  /**
-   * Transforms a string that represents a URI into something more proper, by adding or canonicalizing
-   * the protocol.
-   */
-  private static String massageURI(String uri) {
-    uri = uri.trim();
-    int protocolEnd = uri.indexOf(':');
-    if (protocolEnd < 0 || isColonFollowedByPortNumber(uri, protocolEnd)) {
-      // No protocol, or found a colon, but it looks like it is after the host, so the protocol is still missing,
-      // so assume http
-      uri = "http://" + uri;
-    }
-    return uri;
-  }
-
-  private static boolean isColonFollowedByPortNumber(String uri, int protocolEnd) {
-    int start = protocolEnd + 1;
-    int nextSlash = uri.indexOf('/', start);
-    if (nextSlash < 0) {
-      nextSlash = uri.length();
-    }
-    return ResultParser.isSubstringOfDigits(uri, start, nextSlash - start);
   }
 
 

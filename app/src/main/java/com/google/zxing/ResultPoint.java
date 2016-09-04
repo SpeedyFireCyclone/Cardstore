@@ -34,39 +34,6 @@ public class ResultPoint {
     this.y = y;
   }
 
-  public final float getX() {
-    return x;
-  }
-
-  public final float getY() {
-    return y;
-  }
-
-  @Override
-  public final boolean equals(Object other) {
-    if (other instanceof ResultPoint) {
-      ResultPoint otherPoint = (ResultPoint) other;
-      return x == otherPoint.x && y == otherPoint.y;
-    }
-    return false;
-  }
-
-  @Override
-  public final int hashCode() {
-    return 31 * Float.floatToIntBits(x) + Float.floatToIntBits(y);
-  }
-
-  @Override
-  public final String toString() {
-    StringBuilder result = new StringBuilder(25);
-    result.append('(');
-    result.append(x);
-    result.append(',');
-    result.append(y);
-    result.append(')');
-    return result.toString();
-  }
-
   /**
    * Orders an array of three ResultPoints in an order [A,B,C] such that AB is less than AC
    * and BC is less than AC, and the angle between BC and BA is less than 180 degrees.
@@ -113,7 +80,6 @@ public class ResultPoint {
     patterns[2] = pointC;
   }
 
-
   /**
    * @param pattern1 first pattern
    * @param pattern2 second pattern
@@ -132,6 +98,33 @@ public class ResultPoint {
     float bX = pointB.x;
     float bY = pointB.y;
     return ((pointC.x - bX) * (pointA.y - bY)) - ((pointC.y - bY) * (pointA.x - bX));
+  }
+
+  public final float getX() {
+    return x;
+  }
+
+  public final float getY() {
+    return y;
+  }
+
+  @Override
+  public final boolean equals(Object other) {
+    if (other instanceof ResultPoint) {
+      ResultPoint otherPoint = (ResultPoint) other;
+      return x == otherPoint.x && y == otherPoint.y;
+    }
+    return false;
+  }
+
+  @Override
+  public final int hashCode() {
+    return 31 * Float.floatToIntBits(x) + Float.floatToIntBits(y);
+  }
+
+  @Override
+  public final String toString() {
+    return "(" + x + ',' + y + ')';
   }
 
 

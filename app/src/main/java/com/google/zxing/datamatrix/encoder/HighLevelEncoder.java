@@ -27,10 +27,6 @@ import java.util.Arrays;
 public final class HighLevelEncoder {
   
   /**
-   * Padding character
-   */
-  private static final char PAD = 129;
-  /**
    * mode latch to C40 encodation mode
    */
   static final char LATCH_TO_C40 = 230;
@@ -38,6 +34,10 @@ public final class HighLevelEncoder {
    * mode latch to Base 256 encodation mode
    */
   static final char LATCH_TO_BASE256 = 231;
+  /**
+   * Upper Shift
+   */
+  static final char UPPER_SHIFT = 235;
   /**
    * FNC1 Codeword
    */
@@ -51,18 +51,6 @@ public final class HighLevelEncoder {
    */
   //private static final char READER_PROGRAMMING = 234;
   /**
-   * Upper Shift
-   */
-  static final char UPPER_SHIFT = 235;
-  /**
-   * 05 Macro
-   */
-  private static final char MACRO_05 = 236;
-  /**
-   * 06 Macro
-   */
-  private static final char MACRO_06 = 237;
-  /**
    * mode latch to ANSI X.12 encodation mode
    */
   static final char LATCH_TO_ANSIX12 = 238;
@@ -75,11 +63,6 @@ public final class HighLevelEncoder {
    */
   static final char LATCH_TO_EDIFACT = 240;
   /**
-   * ECI character (Extended Channel Interpretation)
-   */
-  //private static final char ECI = 241;
-
-  /**
    * Unlatch from C40 encodation
    */
   static final char C40_UNLATCH = 254;
@@ -87,7 +70,28 @@ public final class HighLevelEncoder {
    * Unlatch from X12 encodation
    */
   static final char X12_UNLATCH = 254;
-
+  static final int ASCII_ENCODATION = 0;
+  /**
+   * ECI character (Extended Channel Interpretation)
+   */
+  //private static final char ECI = 241;
+  static final int C40_ENCODATION = 1;
+  static final int TEXT_ENCODATION = 2;
+  static final int X12_ENCODATION = 3;
+  static final int EDIFACT_ENCODATION = 4;
+  static final int BASE256_ENCODATION = 5;
+  /**
+   * Padding character
+   */
+  private static final char PAD = 129;
+  /**
+   * 05 Macro
+   */
+  private static final char MACRO_05 = 236;
+  /**
+   * 06 Macro
+   */
+  private static final char MACRO_06 = 237;
   /**
    * 05 Macro header
    */
@@ -100,13 +104,6 @@ public final class HighLevelEncoder {
    * Macro trailer
    */
   private static final String MACRO_TRAILER = "\u001E\u0004";
-
-  static final int ASCII_ENCODATION = 0;
-  static final int C40_ENCODATION = 1;
-  static final int TEXT_ENCODATION = 2;
-  static final int X12_ENCODATION = 3;
-  static final int EDIFACT_ENCODATION = 4;
-  static final int BASE256_ENCODATION = 5;
 
   private HighLevelEncoder() {
   }
@@ -128,7 +125,7 @@ public final class HighLevelEncoder {
   private static char randomize253State(char ch, int codewordPosition) {
     int pseudoRandom = ((149 * codewordPosition) % 253) + 1;
     int tempVariable = ch + pseudoRandom;
-    return tempVariable <= 254 ? (char) tempVariable : (char) (tempVariable - 254);
+    return (char) (tempVariable <= 254 ? tempVariable : tempVariable - 254);
   }
 
   /**

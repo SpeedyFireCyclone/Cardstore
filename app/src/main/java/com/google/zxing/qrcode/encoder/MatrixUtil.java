@@ -27,10 +27,6 @@ import com.google.zxing.qrcode.decoder.Version;
  */
 final class MatrixUtil {
 
-  private MatrixUtil() {
-    // do nothing
-  }
-
   private static final int[][] POSITION_DETECTION_PATTERN =  {
       {1, 1, 1, 1, 1, 1, 1},
       {1, 0, 0, 0, 0, 0, 1},
@@ -40,7 +36,6 @@ final class MatrixUtil {
       {1, 0, 0, 0, 0, 0, 1},
       {1, 1, 1, 1, 1, 1, 1},
   };
-
   private static final int[][] POSITION_ADJUSTMENT_PATTERN = {
       {1, 1, 1, 1, 1},
       {1, 0, 0, 0, 1},
@@ -48,7 +43,6 @@ final class MatrixUtil {
       {1, 0, 0, 0, 1},
       {1, 1, 1, 1, 1},
   };
-
   // From Appendix E. Table 1, JIS0510X:2004 (p 71). The table was double-checked by komatsu.
   private static final int[][] POSITION_ADJUSTMENT_PATTERN_COORDINATE_TABLE = {
       {-1, -1, -1, -1,  -1,  -1,  -1},  // Version 1
@@ -92,7 +86,6 @@ final class MatrixUtil {
       { 6, 26, 54, 82, 110, 138, 166},  // Version 39
       { 6, 30, 58, 86, 114, 142, 170},  // Version 40
   };
-
   // Type info cells at the left top corner.
   private static final int[][] TYPE_INFO_COORDINATES = {
       {8, 0},
@@ -111,13 +104,15 @@ final class MatrixUtil {
       {1, 8},
       {0, 8},
   };
-
   // From Appendix D in JISX0510:2004 (p. 67)
   private static final int VERSION_INFO_POLY = 0x1f25;  // 1 1111 0010 0101
-
   // From Appendix C in JISX0510:2004 (p.65).
   private static final int TYPE_INFO_POLY = 0x537;
   private static final int TYPE_INFO_MASK_PATTERN = 0x5412;
+
+  private MatrixUtil() {
+    // do nothing
+  }
 
   // Set all cells to -1.  -1 means that the cell is empty (not set yet).
   //
@@ -271,12 +266,7 @@ final class MatrixUtil {
   // - findMSBSet(1) => 1
   // - findMSBSet(255) => 8
   static int findMSBSet(int value) {
-    int numDigits = 0;
-    while (value != 0) {
-      value >>>= 1;
-      ++numDigits;
-    }
-    return numDigits;
+    return 32 - Integer.numberOfLeadingZeros(value);
   }
 
   // Calculate BCH (Bose-Chaudhuri-Hocquenghem) code for "value" using polynomial "poly". The BCH

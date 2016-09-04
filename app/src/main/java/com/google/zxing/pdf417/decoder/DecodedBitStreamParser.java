@@ -34,15 +34,6 @@ import java.util.Arrays;
  */
 final class DecodedBitStreamParser {
 
-  private enum Mode {
-    ALPHA,
-    LOWER,
-    MIXED,
-    PUNCT,
-    ALPHA_SHIFT,
-    PUNCT_SHIFT
-  }
-
   private static final int TEXT_COMPACTION_MODE_LATCH = 900;
   private static final int BYTE_COMPACTION_MODE_LATCH = 901;
   private static final int NUMERIC_COMPACTION_MODE_LATCH = 902;
@@ -55,7 +46,6 @@ final class DecodedBitStreamParser {
   private static final int MACRO_PDF417_TERMINATOR = 922;
   private static final int MODE_SHIFT_TO_BYTE_COMPACTION_MODE = 913;
   private static final int MAX_NUMERIC_CODEWORDS = 15;
-
   private static final int PL = 25;
   private static final int LL = 27;
   private static final int AS = 27;
@@ -63,24 +53,18 @@ final class DecodedBitStreamParser {
   private static final int AL = 28;
   private static final int PS = 29;
   private static final int PAL = 29;
-
-  private static final char[] PUNCT_CHARS = {
-      ';', '<', '>', '@', '[', '\\', ']', '_', '`', '~', '!',
-      '\r', '\t', ',', ':', '\n', '-', '.', '$', '/', '"', '|', '*',
-      '(', ')', '?', '{', '}', '\''};
-
-  private static final char[] MIXED_CHARS = {
-      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '&',
-      '\r', '\t', ',', ':', '#', '-', '.', '$', '/', '+', '%', '*',
-      '=', '^'};
-
+  private static final char[] PUNCT_CHARS =
+          ";<>@[\\]_`~!\r\t,:\n-.$/\"|*()?{}'".toCharArray();
+  private static final char[] MIXED_CHARS =
+          "0123456789&\r\t,:#-.$/+%*=^".toCharArray();
   private static final Charset DEFAULT_ENCODING = Charset.forName("ISO-8859-1");
-
   /**
    * Table containing values for the exponent of 900.
    * This is used in the numeric compaction decode algorithm.
    */
   private static final BigInteger[] EXP900;
+  private static final int NUMBER_OF_SEQUENCE_CODEWORDS = 2;
+
   static {
     EXP900 = new BigInteger[16];
     EXP900[0] = BigInteger.ONE;
@@ -90,8 +74,6 @@ final class DecodedBitStreamParser {
       EXP900[i] = EXP900[i - 1].multiply(nineHundred);
     }
   }
-
-  private static final int NUMBER_OF_SEQUENCE_CODEWORDS = 2;
 
   private DecodedBitStreamParser() {
   }
@@ -411,7 +393,7 @@ final class DecodedBitStreamParser {
             if (subModeCh == PAL) {
               subMode = Mode.ALPHA;
             } else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
-              // PS before Shift-to-Byte is used as a padding character, 
+              // PS before Shift-to-Byte is used as a padding character,
               // see 5.4.2.4 of the specification
               result.append((char) byteCompactionData[i]);
             } else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
@@ -636,6 +618,15 @@ final class DecodedBitStreamParser {
       throw FormatException.getFormatInstance();
     }
     return resultString.substring(1);
+  }
+
+  private enum Mode {
+    ALPHA,
+    LOWER,
+    MIXED,
+    PUNCT,
+    ALPHA_SHIFT,
+    PUNCT_SHIFT
   }
 
 }

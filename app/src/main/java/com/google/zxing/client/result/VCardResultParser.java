@@ -46,59 +46,6 @@ public final class VCardResultParser extends ResultParser {
   private static final Pattern COMMA = Pattern.compile(",");
   private static final Pattern SEMICOLON_OR_COMMA = Pattern.compile("[;,]");
 
-  @Override
-  public AddressBookParsedResult parse(Result result) {
-    // Although we should insist on the raw text ending with "END:VCARD", there's no reason
-    // to throw out everything else we parsed just because this was omitted. In fact, Eclair
-    // is doing just that, and we can't parse its contacts without this leniency.
-    String rawText = getMassagedText(result);
-    Matcher m = BEGIN_VCARD.matcher(rawText);
-    if (!m.find() || m.start() != 0) {
-      return null;
-    }
-    List<List<String>> names = matchVCardPrefixedField("FN", rawText, true, false);
-    if (names == null) {
-      // If no display names found, look for regular name fields and format them
-      names = matchVCardPrefixedField("N", rawText, true, false);
-      formatNames(names);
-    }
-    List<String> nicknameString = matchSingleVCardPrefixedField("NICKNAME", rawText, true, false);
-    String[] nicknames = nicknameString == null ? null : COMMA.split(nicknameString.get(0));
-    List<List<String>> phoneNumbers = matchVCardPrefixedField("TEL", rawText, true, false);
-    List<List<String>> emails = matchVCardPrefixedField("EMAIL", rawText, true, false);
-    List<String> note = matchSingleVCardPrefixedField("NOTE", rawText, false, false);
-    List<List<String>> addresses = matchVCardPrefixedField("ADR", rawText, true, true);
-    List<String> org = matchSingleVCardPrefixedField("ORG", rawText, true, true);
-    List<String> birthday = matchSingleVCardPrefixedField("BDAY", rawText, true, false);
-    if (birthday != null && !isLikeVCardDate(birthday.get(0))) {
-      birthday = null;
-    }
-    List<String> title = matchSingleVCardPrefixedField("TITLE", rawText, true, false);
-    List<List<String>> urls = matchVCardPrefixedField("URL", rawText, true, false);
-    List<String> instantMessenger = matchSingleVCardPrefixedField("IMPP", rawText, true, false);
-    List<String> geoString = matchSingleVCardPrefixedField("GEO", rawText, true, false);
-    String[] geo = geoString == null ? null : SEMICOLON_OR_COMMA.split(geoString.get(0));
-    if (geo != null && geo.length != 2) {
-      geo = null;
-    }
-    return new AddressBookParsedResult(toPrimaryValues(names),
-                                       nicknames,
-                                       null, 
-                                       toPrimaryValues(phoneNumbers), 
-                                       toTypes(phoneNumbers),
-                                       toPrimaryValues(emails),
-                                       toTypes(emails),
-                                       toPrimaryValue(instantMessenger),
-                                       toPrimaryValue(note),
-                                       toPrimaryValues(addresses),
-                                       toTypes(addresses),
-                                       toPrimaryValue(org),
-                                       toPrimaryValue(birthday),
-                                       toPrimaryValue(title),
-                                       toPrimaryValues(urls),
-                                       geo);
-  }
-
   static List<List<String>> matchVCardPrefixedField(CharSequence prefix,
                                                     String rawText,
                                                     boolean trim,
@@ -109,7 +56,7 @@ public final class VCardResultParser extends ResultParser {
 
     while (i < max) {
 
-      // At start or after newline, match prefix, followed by optional metadata 
+      // At start or after newline, match prefix, followed by optional metadata
       // (led by ;) ultimately ending in colon
       Matcher matcher = Pattern.compile("(?:^|\n)" + prefix + "(?:;([^:]*))?:",
                                         Pattern.CASE_INSENSITIVE).matcher(rawText);
@@ -146,14 +93,14 @@ public final class VCardResultParser extends ResultParser {
 
       int matchStart = i; // Found the start of a match here
 
-      while ((i = rawText.indexOf((int) '\n', i)) >= 0) { // Really, end in \r\n
+      while ((i = rawText.indexOf('\n', i)) >= 0) { // Really, end in \r\n
         if (i < rawText.length() - 1 &&           // But if followed by tab or space,
-            (rawText.charAt(i+1) == ' ' ||        // this is only a continuation
-             rawText.charAt(i+1) == '\t')) {
+                (rawText.charAt(i + 1) == ' ' ||        // this is only a continuation
+                        rawText.charAt(i + 1) == '\t')) {
           i += 2; // Skip \n and continutation whitespace
         } else if (quotedPrintable &&             // If preceded by = in quoted printable
-                   ((i >= 1 && rawText.charAt(i-1) == '=') || // this is a continuation
-                    (i >= 2 && rawText.charAt(i-2) == '='))) {
+                ((i >= 1 && rawText.charAt(i - 1) == '=') || // this is a continuation
+                        (i >= 2 && rawText.charAt(i - 2) == '='))) {
           i++; // Skip \n
         } else {
           break;
@@ -168,7 +115,7 @@ public final class VCardResultParser extends ResultParser {
         if (matches == null) {
           matches = new ArrayList<>(1); // lazy init
         }
-        if (i >= 1 && rawText.charAt(i-1) == '\r') {
+        if (i >= 1 && rawText.charAt(i - 1) == '\r') {
           i--; // Back up over \r, which really should be there
         }
         String element = rawText.substring(matchStart, i);
@@ -218,9 +165,9 @@ public final class VCardResultParser extends ResultParser {
           break;
         case '=':
           if (i < length - 2) {
-            char nextChar = value.charAt(i+1);
+            char nextChar = value.charAt(i + 1);
             if (nextChar != '\r' && nextChar != '\n') {
-              char nextNextChar = value.charAt(i+2);
+              char nextNextChar = value.charAt(i + 2);
               int firstDigit = parseHexDigit(nextChar);
               int secondDigit = parseHexDigit(nextNextChar);
               if (firstDigit >= 0 && secondDigit >= 0) {
@@ -266,7 +213,7 @@ public final class VCardResultParser extends ResultParser {
     List<List<String>> values = matchVCardPrefixedField(prefix, rawText, trim, parseFieldDivider);
     return values == null || values.isEmpty() ? null : values.get(0);
   }
-  
+
   private static String toPrimaryValue(List<String> list) {
     return list == null || list.isEmpty() ? null : list.get(0);
   }
@@ -352,6 +299,59 @@ public final class VCardResultParser extends ResultParser {
       }
       newName.append(components[i]);
     }
+  }
+
+  @Override
+  public AddressBookParsedResult parse(Result result) {
+    // Although we should insist on the raw text ending with "END:VCARD", there's no reason
+    // to throw out everything else we parsed just because this was omitted. In fact, Eclair
+    // is doing just that, and we can't parse its contacts without this leniency.
+    String rawText = getMassagedText(result);
+    Matcher m = BEGIN_VCARD.matcher(rawText);
+    if (!m.find() || m.start() != 0) {
+      return null;
+    }
+    List<List<String>> names = matchVCardPrefixedField("FN", rawText, true, false);
+    if (names == null) {
+      // If no display names found, look for regular name fields and format them
+      names = matchVCardPrefixedField("N", rawText, true, false);
+      formatNames(names);
+    }
+    List<String> nicknameString = matchSingleVCardPrefixedField("NICKNAME", rawText, true, false);
+    String[] nicknames = nicknameString == null ? null : COMMA.split(nicknameString.get(0));
+    List<List<String>> phoneNumbers = matchVCardPrefixedField("TEL", rawText, true, false);
+    List<List<String>> emails = matchVCardPrefixedField("EMAIL", rawText, true, false);
+    List<String> note = matchSingleVCardPrefixedField("NOTE", rawText, false, false);
+    List<List<String>> addresses = matchVCardPrefixedField("ADR", rawText, true, true);
+    List<String> org = matchSingleVCardPrefixedField("ORG", rawText, true, true);
+    List<String> birthday = matchSingleVCardPrefixedField("BDAY", rawText, true, false);
+    if (birthday != null && !isLikeVCardDate(birthday.get(0))) {
+      birthday = null;
+    }
+    List<String> title = matchSingleVCardPrefixedField("TITLE", rawText, true, false);
+    List<List<String>> urls = matchVCardPrefixedField("URL", rawText, true, false);
+    List<String> instantMessenger = matchSingleVCardPrefixedField("IMPP", rawText, true, false);
+    List<String> geoString = matchSingleVCardPrefixedField("GEO", rawText, true, false);
+    String[] geo = geoString == null ? null : SEMICOLON_OR_COMMA.split(geoString.get(0));
+    if (geo != null && geo.length != 2) {
+      geo = null;
+    }
+    return new AddressBookParsedResult(toPrimaryValues(names),
+            nicknames,
+            null,
+            toPrimaryValues(phoneNumbers),
+            toTypes(phoneNumbers),
+            toPrimaryValues(emails),
+            toTypes(emails),
+            toPrimaryValue(instantMessenger),
+            toPrimaryValue(note),
+            toPrimaryValues(addresses),
+            toTypes(addresses),
+            toPrimaryValue(org),
+            toPrimaryValue(birthday),
+            toPrimaryValue(title),
+            toPrimaryValues(urls),
+            geo);
   }
 
 }

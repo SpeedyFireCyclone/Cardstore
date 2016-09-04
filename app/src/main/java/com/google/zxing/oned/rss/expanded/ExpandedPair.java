@@ -49,7 +49,15 @@ final class ExpandedPair {
     this.mayBeLast = mayBeLast;
   }
 
-  boolean mayBeLast(){
+  private static boolean equalsOrNull(Object o1, Object o2) {
+    return o1 == null ? o2 == null : o1.equals(o2);
+  }
+
+  private static int hashNotNull(Object o) {
+    return o == null ? 0 : o.hashCode();
+  }
+
+  boolean mayBeLast() {
     return this.mayBeLast;
   }
 
@@ -68,14 +76,14 @@ final class ExpandedPair {
   public boolean mustBeLast() {
     return this.rightChar == null;
   }
-  
+
   @Override
   public String toString() {
     return
         "[ " + leftChar + " , " + rightChar + " : " +
         (finderPattern == null ? "null" : finderPattern.getValue()) + " ]";
   }
-  
+
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof ExpandedPair)) {
@@ -88,17 +96,9 @@ final class ExpandedPair {
         equalsOrNull(finderPattern, that.finderPattern);
   }
 
-  private static boolean equalsOrNull(Object o1, Object o2) {
-    return o1 == null ? o2 == null : o1.equals(o2);
-  }
-
   @Override
   public int hashCode() {
     return hashNotNull(leftChar) ^ hashNotNull(rightChar) ^ hashNotNull(finderPattern);
-  }
-
-  private static int hashNotNull(Object o) {
-    return o == null ? 0 : o.hashCode();
   }
 
 }

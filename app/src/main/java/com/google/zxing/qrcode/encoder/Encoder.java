@@ -37,6 +37,7 @@ import java.util.Map;
  */
 public final class Encoder {
 
+  static final String DEFAULT_BYTE_MODE_ENCODING = "ISO-8859-1";
   // The original table is defined in the table 5 of JISX0510:2004 (p.19).
   private static final int[] ALPHANUMERIC_TABLE = {
       -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 0x00-0x0f
@@ -46,8 +47,6 @@ public final class Encoder {
       -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,  // 0x40-0x4f
       25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1,  // 0x50-0x5f
   };
-
-  static final String DEFAULT_BYTE_MODE_ENCODING = "ISO-8859-1";
 
   private Encoder() {
   }
@@ -77,9 +76,9 @@ public final class Encoder {
                               Map<EncodeHintType,?> hints) throws WriterException {
 
     // Determine what character encoding has been specified by the caller, if any
-    String encoding = hints == null ? null : (String) hints.get(EncodeHintType.CHARACTER_SET);
-    if (encoding == null) {
-      encoding = DEFAULT_BYTE_MODE_ENCODING;
+    String encoding = DEFAULT_BYTE_MODE_ENCODING;
+    if (hints != null && hints.containsKey(EncodeHintType.CHARACTER_SET)) {
+      encoding = hints.get(EncodeHintType.CHARACTER_SET).toString();
     }
 
     // Pick an encoding mode appropriate for the content. Note that this will not attempt to use
@@ -106,21 +105,17 @@ public final class Encoder {
     BitArray dataBits = new BitArray();
     appendBytes(content, mode, dataBits, encoding);
 
-    // Hard part: need to know version to know how many bits length takes. But need to know how many
-    // bits it takes to know version. First we take a guess at version by assuming version will be
-    // the minimum, 1:
-
-    int provisionalBitsNeeded = headerBits.getSize()
-        + mode.getCharacterCountBits(Version.getVersionForNumber(1))
-        + dataBits.getSize();
-    Version provisionalVersion = chooseVersion(provisionalBitsNeeded, ecLevel);
-
-    // Use that guess to calculate the right version. I am still not sure this works in 100% of cases.
-
-    int bitsNeeded = headerBits.getSize()
-        + mode.getCharacterCountBits(provisionalVersion)
-        + dataBits.getSize();
-    Version version = chooseVersion(bitsNeeded, ecLevel);
+    Version version;
+    if (hints != null && hints.containsKey(EncodeHintType.QR_VERSION)) {
+      int versionNumber = Integer.parseInt(hints.get(EncodeHintType.QR_VERSION).toString());
+      version = Version.getVersionForNumber(versionNumber);
+      int bitsNeeded = calculateBitsNeeded(mode, headerBits, dataBits, version);
+      if (!willFit(bitsNeeded, version, ecLevel)) {
+        throw new WriterException("Data too big for requested version");
+      }
+    } else {
+      version = recommendVersion(ecLevel, mode, headerBits, dataBits);
+    }
 
     BitArray headerAndDataBits = new BitArray();
     headerAndDataBits.appendBitArray(headerBits);
@@ -162,6 +157,33 @@ public final class Encoder {
   }
 
   /**
+   * Decides the smallest version of QR code that will contain all of the provided data.
+   *
+   * @throws WriterException if the data cannot fit in any version
+   */
+  private static Version recommendVersion(ErrorCorrectionLevel ecLevel,
+                                          Mode mode,
+                                          BitArray headerBits,
+                                          BitArray dataBits) throws WriterException {
+    // Hard part: need to know version to know how many bits length takes. But need to know how many
+    // bits it takes to know version. First we take a guess at version by assuming version will be
+    // the minimum, 1:
+    int provisionalBitsNeeded = calculateBitsNeeded(mode, headerBits, dataBits, Version.getVersionForNumber(1));
+    Version provisionalVersion = chooseVersion(provisionalBitsNeeded, ecLevel);
+
+    // Use that guess to calculate the right version. I am still not sure this works in 100% of cases.
+    int bitsNeeded = calculateBitsNeeded(mode, headerBits, dataBits, provisionalVersion);
+    return chooseVersion(bitsNeeded, ecLevel);
+  }
+
+  private static int calculateBitsNeeded(Mode mode,
+                                         BitArray headerBits,
+                                         BitArray dataBits,
+                                         Version version) {
+    return headerBits.getSize() + mode.getCharacterCountBits(version) + dataBits.getSize();
+  }
+
+  /**
    * @return the code point of the table used in alphanumeric mode or
    *  -1 if there is no corresponding code in the table.
    */
@@ -181,9 +203,9 @@ public final class Encoder {
    * if it is Shift_JIS, and the input is only double-byte Kanji, then we return {@link Mode#KANJI}.
    */
   private static Mode chooseMode(String content, String encoding) {
-    if ("Shift_JIS".equals(encoding)) {
+    if ("Shift_JIS".equals(encoding) && isOnlyDoubleByteKanji(content)) {
       // Choose Kanji mode if all input are double-byte characters
-      return isOnlyDoubleByteKanji(content) ? Mode.KANJI : Mode.BYTE;
+      return Mode.KANJI;
     }
     boolean hasNumeric = false;
     boolean hasAlphanumeric = false;
@@ -246,9 +268,21 @@ public final class Encoder {
   }
 
   private static Version chooseVersion(int numInputBits, ErrorCorrectionLevel ecLevel) throws WriterException {
-    // In the following comments, we use numbers of Version 7-H.
     for (int versionNum = 1; versionNum <= 40; versionNum++) {
       Version version = Version.getVersionForNumber(versionNum);
+      if (willFit(numInputBits, version, ecLevel)) {
+        return version;
+      }
+    }
+    throw new WriterException("Data too big");
+  }
+
+  /**
+   * @return true if the number of input bits will fit in a code with the specified version and
+   * error correction level.
+   */
+  private static boolean willFit(int numInputBits, Version version, ErrorCorrectionLevel ecLevel) {
+    // In the following comments, we use numbers of Version 7-H.
       // numBytes = 196
       int numBytes = version.getTotalCodewords();
       // getNumECBytes = 130
@@ -257,11 +291,7 @@ public final class Encoder {
       // getNumDataBytes = 196 - 130 = 66
       int numDataBytes = numBytes - numEcBytes;
       int totalInputBytes = (numInputBits + 7) / 8;
-      if (numDataBytes >= totalInputBytes) {
-        return version;
-      }
-    }
-    throw new WriterException("Data too big");
+    return numDataBytes >= totalInputBytes;
   }
 
   /**
@@ -383,7 +413,7 @@ public final class Encoder {
 
       int size = numDataBytesInBlock[0];
       byte[] dataBytes = new byte[size];
-      bits.toBytes(8*dataBytesOffset, dataBytes, 0, size);
+      bits.toBytes(8 * dataBytesOffset, dataBytes, 0, size);
       byte[] ecBytes = generateECBytes(dataBytes, numEcBytesInBlock[0]);
       blocks.add(new BlockPair(dataBytes, ecBytes));
 

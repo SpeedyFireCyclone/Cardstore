@@ -62,25 +62,14 @@ public class SymbolInfo {
   };
 
   private static SymbolInfo[] symbols = PROD_SYMBOLS;
-
-  /**
-   * Overrides the symbol info set used by this class. Used for testing purposes.
-   *
-   * @param override the symbol info set to use
-   */
-  public static void overrideSymbolSet(SymbolInfo[] override) {
-    symbols = override;
-  }
-
+  public final int matrixWidth;
+  public final int matrixHeight;
   private final boolean rectangular;
   private final int dataCapacity;
   private final int errorCodewords;
-  public final int matrixWidth;
-  public final int matrixHeight;
   private final int dataRegions;
   private final int rsBlockData;
   private final int rsBlockError;
-
   public SymbolInfo(boolean rectangular, int dataCapacity, int errorCodewords,
                     int matrixWidth, int matrixHeight, int dataRegions) {
     this(rectangular, dataCapacity, errorCodewords, matrixWidth, matrixHeight, dataRegions,
@@ -98,6 +87,15 @@ public class SymbolInfo {
     this.dataRegions = dataRegions;
     this.rsBlockData = rsBlockData;
     this.rsBlockError = rsBlockError;
+  }
+
+  /**
+   * Overrides the symbol info set used by this class. Used for testing purposes.
+   *
+   * @param override the symbol info set to use
+   */
+  public static void overrideSymbolSet(SymbolInfo[] override) {
+    symbols = override;
   }
 
   public static SymbolInfo lookup(int dataCodewords) {
@@ -152,12 +150,11 @@ public class SymbolInfo {
     return null;
   }
 
-  final int getHorizontalDataRegions() {
+  private int getHorizontalDataRegions() {
     switch (dataRegions) {
       case 1:
         return 1;
       case 2:
-        return 2;
       case 4:
         return 2;
       case 16:
@@ -169,10 +166,9 @@ public class SymbolInfo {
     }
   }
 
-  final int getVerticalDataRegions() {
+  private int getVerticalDataRegions() {
     switch (dataRegions) {
       case 1:
-        return 1;
       case 2:
         return 1;
       case 4:
@@ -228,13 +224,11 @@ public class SymbolInfo {
 
   @Override
   public final String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(rectangular ? "Rectangular Symbol:" : "Square Symbol:");
-    sb.append(" data region ").append(matrixWidth).append('x').append(matrixHeight);
-    sb.append(", symbol size ").append(getSymbolWidth()).append('x').append(getSymbolHeight());
-    sb.append(", symbol data size ").append(getSymbolDataWidth()).append('x').append(getSymbolDataHeight());
-    sb.append(", codewords ").append(dataCapacity).append('+').append(errorCodewords);
-    return sb.toString();
+    return (rectangular ? "Rectangular Symbol:" : "Square Symbol:") +
+            " data region " + matrixWidth + 'x' + matrixHeight +
+            ", symbol size " + getSymbolWidth() + 'x' + getSymbolHeight() +
+            ", symbol data size " + getSymbolDataWidth() + 'x' + getSymbolDataHeight() +
+            ", codewords " + dataCapacity + '+' + errorCodewords;
   }
 
 }

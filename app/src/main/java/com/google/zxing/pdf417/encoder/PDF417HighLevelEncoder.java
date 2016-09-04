@@ -128,9 +128,6 @@ final class PDF417HighLevelEncoder {
 
   private static final Charset DEFAULT_ENCODING = Charset.forName("ISO-8859-1");
 
-  private PDF417HighLevelEncoder() {
-  }
-
   static {
     //Construct inverse lookups
     Arrays.fill(MIXED, (byte) -1);
@@ -147,6 +144,9 @@ final class PDF417HighLevelEncoder {
         PUNCTUATION[b] = i;
       }
     }
+  }
+
+  private PDF417HighLevelEncoder() {
   }
 
   /**
@@ -379,11 +379,10 @@ final class PDF417HighLevelEncoder {
     if (count == 1 && startmode == TEXT_COMPACTION) {
       sb.append((char) SHIFT_TO_BYTE);
     } else {
-      boolean sixpack = ((count % 6) == 0);
-      if (sixpack) {
-        sb.append((char)LATCH_TO_BYTE);
+      if ((count % 6) == 0) {
+        sb.append((char) LATCH_TO_BYTE);
       } else {
-        sb.append((char)LATCH_TO_BYTE_PADDED);
+        sb.append((char) LATCH_TO_BYTE_PADDED);
       }
     }
 
@@ -534,7 +533,7 @@ final class PDF417HighLevelEncoder {
    */
   private static int determineConsecutiveBinaryCount(String msg, int startpos, Charset encoding)
       throws WriterException {
-    final CharsetEncoder encoder = encoding.newEncoder();
+    CharsetEncoder encoder = encoding.newEncoder();
     int len = msg.length();
     int idx = startpos;
     while (idx < len) {

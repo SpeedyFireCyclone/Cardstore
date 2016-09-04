@@ -16,10 +16,10 @@
 
 package com.google.zxing.common;
 
+import com.google.zxing.DecodeHintType;
+
 import java.nio.charset.Charset;
 import java.util.Map;
-
-import com.google.zxing.DecodeHintType;
 
 /**
  * Common string-related functions.
@@ -29,9 +29,9 @@ import com.google.zxing.DecodeHintType;
  */
 public final class StringUtils {
 
-  private static final String PLATFORM_DEFAULT_ENCODING = Charset.defaultCharset().name();
   public static final String SHIFT_JIS = "SJIS";
   public static final String GB2312 = "GB2312";
+  private static final String PLATFORM_DEFAULT_ENCODING = Charset.defaultCharset().name();
   private static final String EUC_JP = "EUC_JP";
   private static final String UTF8 = "UTF8";
   private static final String ISO88591 = "ISO8859_1";
@@ -49,11 +49,8 @@ public final class StringUtils {
    *  default encoding if none of these can possibly be correct
    */
   public static String guessEncoding(byte[] bytes, Map<DecodeHintType,?> hints) {
-    if (hints != null) {
-      String characterSet = (String) hints.get(DecodeHintType.CHARACTER_SET);
-      if (characterSet != null) {
-        return characterSet;
-      }
+    if (hints != null && hints.containsKey(DecodeHintType.CHARACTER_SET)) {
+      return hints.get(DecodeHintType.CHARACTER_SET).toString();
     }
     // For now, merely tries to distinguish ISO-8859-1, UTF-8 and Shift_JIS,
     // which should be by far the most common encodings.

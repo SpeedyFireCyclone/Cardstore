@@ -70,15 +70,24 @@ public final class GenericGF {
       x *= 2; // we're assuming the generator alpha is 2
       if (x >= size) {
         x ^= primitive;
-        x &= size-1;
+        x &= size - 1;
       }
     }
-    for (int i = 0; i < size-1; i++) {
+    for (int i = 0; i < size - 1; i++) {
       logTable[expTable[i]] = i;
     }
     // logTable[0] == 0 but this should never be used
     zero = new GenericGFPoly(this, new int[]{0});
     one = new GenericGFPoly(this, new int[]{1});
+  }
+
+  /**
+   * Implements both addition and subtraction -- they are the same in GF(size).
+   *
+   * @return sum/difference of a and b
+   */
+  static int addOrSubtract(int a, int b) {
+    return a ^ b;
   }
 
   GenericGFPoly getZero() {
@@ -102,15 +111,6 @@ public final class GenericGF {
     int[] coefficients = new int[degree + 1];
     coefficients[0] = coefficient;
     return new GenericGFPoly(this, coefficients);
-  }
-
-  /**
-   * Implements both addition and subtraction -- they are the same in GF(size).
-   *
-   * @return sum/difference of a and b
-   */
-  static int addOrSubtract(int a, int b) {
-    return a ^ b;
   }
 
   /**

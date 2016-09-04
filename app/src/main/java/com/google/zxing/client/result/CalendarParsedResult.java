@@ -28,6 +28,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Represents a parsed result that encodes a calendar event at a certain time, optionally
+ * with attendees and a location.
+ *
  * @author Sean Owen
  */
 public final class CalendarParsedResult extends ParsedResult {
@@ -95,76 +98,6 @@ public final class CalendarParsedResult extends ParsedResult {
     this.description = description;
     this.latitude = latitude;
     this.longitude = longitude;
-  }
-
-  public String getSummary() {
-    return summary;
-  }
-
-  /**
-   * @return start time
-   */
-  public Date getStart() {
-    return start;
-  }
-
-  /**
-   * @return true if start time was specified as a whole day
-   */
-  public boolean isStartAllDay() {
-    return startAllDay;
-  }
-
-  /**
-   * @return event end {@link Date}, or {@code null} if event has no duration
-   * @see #getStart()
-   */
-  public Date getEnd() {
-    return end;
-  }
-
-  /**
-   * @return true if end time was specified as a whole day
-   */
-  public boolean isEndAllDay() {
-    return endAllDay;
-  }
-
-  public String getLocation() {
-    return location;
-  }
-
-  public String getOrganizer() {
-    return organizer;
-  }
-
-  public String[] getAttendees() {
-    return attendees;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public double getLatitude() {
-    return latitude;
-  }
-
-  public double getLongitude() {
-    return longitude;
-  }
-
-  @Override
-  public String getDisplayResult() {
-    StringBuilder result = new StringBuilder(100);
-    maybeAppend(summary, result);
-    maybeAppend(format(startAllDay, start), result);
-    maybeAppend(format(endAllDay, end), result);
-    maybeAppend(location, result);
-    maybeAppend(organizer, result);
-    maybeAppend(attendees, result);
-    maybeAppend(description, result);
-    return result.toString();
   }
 
   /**
@@ -241,6 +174,76 @@ public final class CalendarParsedResult extends ParsedResult {
 
   private static DateFormat buildDateTimeFormat() {
     return new SimpleDateFormat("yyyyMMdd'T'HHmmss", Locale.ENGLISH);
+  }
+
+  public String getSummary() {
+    return summary;
+  }
+
+  /**
+   * @return start time
+   */
+  public Date getStart() {
+    return start;
+  }
+
+  /**
+   * @return true if start time was specified as a whole day
+   */
+  public boolean isStartAllDay() {
+    return startAllDay;
+  }
+
+  /**
+   * @return event end {@link Date}, or {@code null} if event has no duration
+   * @see #getStart()
+   */
+  public Date getEnd() {
+    return end;
+  }
+
+  /**
+   * @return true if end time was specified as a whole day
+   */
+  public boolean isEndAllDay() {
+    return endAllDay;
+  }
+
+  public String getLocation() {
+    return location;
+  }
+
+  public String getOrganizer() {
+    return organizer;
+  }
+
+  public String[] getAttendees() {
+    return attendees;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public double getLatitude() {
+    return latitude;
+  }
+
+  public double getLongitude() {
+    return longitude;
+  }
+
+  @Override
+  public String getDisplayResult() {
+    StringBuilder result = new StringBuilder(100);
+    maybeAppend(summary, result);
+    maybeAppend(format(startAllDay, start), result);
+    maybeAppend(format(endAllDay, end), result);
+    maybeAppend(location, result);
+    maybeAppend(organizer, result);
+    maybeAppend(attendees, result);
+    maybeAppend(description, result);
+    return result.toString();
   }
 
 }

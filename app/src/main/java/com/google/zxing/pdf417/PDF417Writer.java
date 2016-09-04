@@ -44,57 +44,6 @@ public final class PDF417Writer implements Writer {
    */
   static final int DEFAULT_ERROR_CORRECTION_LEVEL = 2;
 
-  @Override
-  public BitMatrix encode(String contents,
-                          BarcodeFormat format,
-                          int width,
-                          int height,
-                          Map<EncodeHintType,?> hints) throws WriterException {
-    if (format != BarcodeFormat.PDF_417) {
-      throw new IllegalArgumentException("Can only encode PDF_417, but got " + format);
-    }
-
-    PDF417 encoder = new PDF417();
-    int margin = WHITE_SPACE;
-    int errorCorrectionLevel = DEFAULT_ERROR_CORRECTION_LEVEL;
-
-    if (hints != null) {
-      if (hints.containsKey(EncodeHintType.PDF417_COMPACT)) {
-        encoder.setCompact((Boolean) hints.get(EncodeHintType.PDF417_COMPACT));
-      }
-      if (hints.containsKey(EncodeHintType.PDF417_COMPACTION)) {
-        encoder.setCompaction((Compaction) hints.get(EncodeHintType.PDF417_COMPACTION));
-      }
-      if (hints.containsKey(EncodeHintType.PDF417_DIMENSIONS)) {
-        Dimensions dimensions = (Dimensions) hints.get(EncodeHintType.PDF417_DIMENSIONS);
-        encoder.setDimensions(dimensions.getMaxCols(),
-                              dimensions.getMinCols(),
-                              dimensions.getMaxRows(),
-                              dimensions.getMinRows());
-      }
-      if (hints.containsKey(EncodeHintType.MARGIN)) {
-        margin = ((Number) hints.get(EncodeHintType.MARGIN)).intValue();
-      }
-      if (hints.containsKey(EncodeHintType.ERROR_CORRECTION)) {
-        errorCorrectionLevel = ((Number) hints.get(EncodeHintType.ERROR_CORRECTION)).intValue();
-      }
-      if (hints.containsKey(EncodeHintType.CHARACTER_SET)) {
-        String encoding = (String) hints.get(EncodeHintType.CHARACTER_SET);
-        encoder.setEncoding(Charset.forName(encoding));
-      }
-    }
-
-    return bitMatrixFromEncoder(encoder, contents, errorCorrectionLevel, width, height, margin);
-  }
-
-  @Override
-  public BitMatrix encode(String contents,
-                          BarcodeFormat format,
-                          int width,
-                          int height) throws WriterException {
-    return encode(contents, format, width, height, null);
-  }
-
   /**
    * Takes encoder, accounts for width/height, and retrieves bit matrix
    */
@@ -171,6 +120,57 @@ public final class PDF417Writer implements Writer {
       }
     }
     return temp;
+  }
+
+  @Override
+  public BitMatrix encode(String contents,
+                          BarcodeFormat format,
+                          int width,
+                          int height,
+                          Map<EncodeHintType, ?> hints) throws WriterException {
+    if (format != BarcodeFormat.PDF_417) {
+      throw new IllegalArgumentException("Can only encode PDF_417, but got " + format);
+    }
+
+    PDF417 encoder = new PDF417();
+    int margin = WHITE_SPACE;
+    int errorCorrectionLevel = DEFAULT_ERROR_CORRECTION_LEVEL;
+
+    if (hints != null) {
+      if (hints.containsKey(EncodeHintType.PDF417_COMPACT)) {
+        encoder.setCompact(Boolean.valueOf(hints.get(EncodeHintType.PDF417_COMPACT).toString()));
+      }
+      if (hints.containsKey(EncodeHintType.PDF417_COMPACTION)) {
+        encoder.setCompaction(Compaction.valueOf(hints.get(EncodeHintType.PDF417_COMPACTION).toString()));
+      }
+      if (hints.containsKey(EncodeHintType.PDF417_DIMENSIONS)) {
+        Dimensions dimensions = (Dimensions) hints.get(EncodeHintType.PDF417_DIMENSIONS);
+        encoder.setDimensions(dimensions.getMaxCols(),
+                dimensions.getMinCols(),
+                dimensions.getMaxRows(),
+                dimensions.getMinRows());
+      }
+      if (hints.containsKey(EncodeHintType.MARGIN)) {
+        margin = Integer.parseInt(hints.get(EncodeHintType.MARGIN).toString());
+      }
+      if (hints.containsKey(EncodeHintType.ERROR_CORRECTION)) {
+        errorCorrectionLevel = Integer.parseInt(hints.get(EncodeHintType.ERROR_CORRECTION).toString());
+      }
+      if (hints.containsKey(EncodeHintType.CHARACTER_SET)) {
+        Charset encoding = Charset.forName(hints.get(EncodeHintType.CHARACTER_SET).toString());
+        encoder.setEncoding(encoding);
+      }
+    }
+
+    return bitMatrixFromEncoder(encoder, contents, errorCorrectionLevel, width, height, margin);
+  }
+
+  @Override
+  public BitMatrix encode(String contents,
+                          BarcodeFormat format,
+                          int width,
+                          int height) throws WriterException {
+    return encode(contents, format, width, height, null);
   }
 
 }

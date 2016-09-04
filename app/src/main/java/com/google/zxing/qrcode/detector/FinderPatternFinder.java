@@ -39,15 +39,14 @@ import java.util.Map;
  */
 public class FinderPatternFinder {
 
-  private static final int CENTER_QUORUM = 2;
   protected static final int MIN_SKIP = 3; // 1 pixel/module times 3 modules/center
   protected static final int MAX_MODULES = 57; // support up to version 10 for mobile clients
-
+  private static final int CENTER_QUORUM = 2;
   private final BitMatrix image;
   private final List<FinderPattern> possibleCenters;
-  private boolean hasSkipped;
   private final int[] crossCheckStateCount;
   private final ResultPointCallback resultPointCallback;
+  private boolean hasSkipped;
 
   /**
    * <p>Creates a finder that will search the image for three finder patterns.</p>
@@ -63,6 +62,42 @@ public class FinderPatternFinder {
     this.possibleCenters = new ArrayList<>();
     this.crossCheckStateCount = new int[5];
     this.resultPointCallback = resultPointCallback;
+  }
+
+  /**
+   * Given a count of black/white/black/white/black pixels just seen and an end position,
+   * figures the location of the center of this run.
+   */
+  private static float centerFromEnd(int[] stateCount, int end) {
+    return (end - stateCount[4] - stateCount[3]) - stateCount[2] / 2.0f;
+  }
+
+  /**
+   * @param stateCount count of black/white/black/white/black pixels just read
+   * @return true iff the proportions of the counts is close enough to the 1/1/3/1/1 ratios
+   * used by finder patterns to be considered a match
+   */
+  protected static boolean foundPatternCross(int[] stateCount) {
+    int totalModuleSize = 0;
+    for (int i = 0; i < 5; i++) {
+      int count = stateCount[i];
+      if (count == 0) {
+        return false;
+      }
+      totalModuleSize += count;
+    }
+    if (totalModuleSize < 7) {
+      return false;
+    }
+    float moduleSize = totalModuleSize / 7.0f;
+    float maxVariance = moduleSize / 2.0f;
+    // Allow less than 50% variance from 1-1-3-1-1 proportions
+    return
+            Math.abs(moduleSize - stateCount[0]) < maxVariance &&
+                    Math.abs(moduleSize - stateCount[1]) < maxVariance &&
+                    Math.abs(3.0f * moduleSize - stateCount[2]) < 3 * maxVariance &&
+                    Math.abs(moduleSize - stateCount[3]) < maxVariance &&
+                    Math.abs(moduleSize - stateCount[4]) < maxVariance;
   }
 
   protected final BitMatrix getImage() {
@@ -181,42 +216,6 @@ public class FinderPatternFinder {
     ResultPoint.orderBestPatterns(patternInfo);
 
     return new FinderPatternInfo(patternInfo);
-  }
-
-  /**
-   * Given a count of black/white/black/white/black pixels just seen and an end position,
-   * figures the location of the center of this run.
-   */
-  private static float centerFromEnd(int[] stateCount, int end) {
-    return (float) (end - stateCount[4] - stateCount[3]) - stateCount[2] / 2.0f;
-  }
-
-  /**
-   * @param stateCount count of black/white/black/white/black pixels just read
-   * @return true iff the proportions of the counts is close enough to the 1/1/3/1/1 ratios
-   *         used by finder patterns to be considered a match
-   */
-  protected static boolean foundPatternCross(int[] stateCount) {
-    int totalModuleSize = 0;
-    for (int i = 0; i < 5; i++) {
-      int count = stateCount[i];
-      if (count == 0) {
-        return false;
-      }
-      totalModuleSize += count;
-    }
-    if (totalModuleSize < 7) {
-      return false;
-    }
-    float moduleSize = totalModuleSize / 7.0f;
-    float maxVariance = moduleSize / 2.0f;
-    // Allow less than 50% variance from 1-1-3-1-1 proportions
-    return
-        Math.abs(moduleSize - stateCount[0]) < maxVariance &&
-        Math.abs(moduleSize - stateCount[1]) < maxVariance &&
-        Math.abs(3.0f * moduleSize - stateCount[2]) < 3 * maxVariance &&
-        Math.abs(moduleSize - stateCount[3]) < maxVariance &&
-        Math.abs(moduleSize - stateCount[4]) < maxVariance;
   }
 
   private int[] getCrossCheckStateCount() {
@@ -494,7 +493,7 @@ public class FinderPatternFinder {
       centerJ = crossCheckHorizontal((int) centerJ, (int) centerI, stateCount[2], stateCountTotal);
       if (!Float.isNaN(centerJ) &&
           (!pureBarcode || crossCheckDiagonal((int) centerI, (int) centerJ, stateCount[2], stateCountTotal))) {
-        float estimatedModuleSize = (float) stateCountTotal / 7.0f;
+        float estimatedModuleSize = stateCountTotal / 7.0f;
         boolean found = false;
         for (int index = 0; index < possibleCenters.size(); index++) {
           FinderPattern center = possibleCenters.get(index);
@@ -571,7 +570,7 @@ public class FinderPatternFinder {
     // and that we need to keep looking. We detect this by asking if the estimated module sizes
     // vary too much. We arbitrarily say that when the total deviation from average exceeds
     // 5% of the total module size estimates, it's too much.
-    float average = totalModuleSize / (float) max;
+    float average = totalModuleSize / max;
     float totalDeviation = 0.0f;
     for (FinderPattern pattern : possibleCenters) {
       totalDeviation += Math.abs(pattern.getEstimatedModuleSize() - average);
@@ -603,7 +602,7 @@ public class FinderPatternFinder {
         totalModuleSize += size;
         square += size * size;
       }
-      float average = totalModuleSize / (float) startSize;
+      float average = totalModuleSize / startSize;
       float stdDev = (float) Math.sqrt(square / startSize - average * average);
 
       Collections.sort(possibleCenters, new FurthestFromAverageComparator(average));
@@ -627,7 +626,7 @@ public class FinderPatternFinder {
         totalModuleSize += possibleCenter.getEstimatedModuleSize();
       }
 
-      float average = totalModuleSize / (float) possibleCenters.size();
+      float average = totalModuleSize / possibleCenters.size();
 
       Collections.sort(possibleCenters, new CenterComparator(average));
 

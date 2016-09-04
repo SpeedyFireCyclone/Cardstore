@@ -15,6 +15,8 @@
  */
 package com.google.zxing.pdf417;
 
+import com.google.zxing.common.detector.MathUtils;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -34,44 +36,6 @@ public final class PDF417Common {
   public static final int MODULES_IN_CODEWORD = 17;
   public static final int MODULES_IN_STOP_PATTERN = 18;
   public static final int BARS_IN_MODULE = 8;
-
-  private static final int[] EMPTY_INT_ARRAY = {};
-
-  private PDF417Common() {
-  }
-
-  public static int getBitCountSum(int[] moduleBitCount) {
-    int bitCountSum = 0;
-    for (int count : moduleBitCount) {
-      bitCountSum += count;
-    }
-    return bitCountSum;
-  }
-
-  public static int[] toIntArray(Collection<Integer> list) {
-    if (list == null || list.isEmpty()) {
-      return EMPTY_INT_ARRAY;
-    }
-    int[] result = new int[list.size()];
-    int i = 0;
-    for (Integer integer : list) {
-      result[i++] = integer;
-    }
-    return result;
-  }
-
-  /**
-   * @param symbol encoded symbol to translate to a codeword
-   * @return the codeword corresponding to the symbol.
-   */
-  public static int getCodeword(int symbol) {
-    int i = Arrays.binarySearch(SYMBOL_TABLE, symbol & 0x3FFFF);
-    if (i < 0) {
-      return -1;
-    }
-    return (CODEWORD_TABLE[i] - 1) % NUMBER_OF_CODEWORDS;
-  }
-
   /**
    * The sorted table of all possible symbols. Extracted from the PDF417
    * specification. The index of a symbol in this table corresponds to the
@@ -311,7 +275,7 @@ public final class PDF417Common {
       0x1fa9c, 0x1fab8, 0x1fac2, 0x1fac4, 0x1fac8, 0x1fad0, 0x1fade, 0x1fae6, 0x1faec, 0x1fb16, 0x1fb26, 0x1fb2c,
       0x1fb3a, 0x1fb46, 0x1fb4c, 0x1fb58, 0x1fb6e, 0x1fb72, 0x1fb74, 0x1fb8a, 0x1fb92, 0x1fb94, 0x1fba2, 0x1fba4,
       0x1fba8, 0x1fbb6, 0x1fbda};
-
+  private static final int[] EMPTY_INT_ARRAY = {};
   /**
    * This table contains to codewords for all symbols.
    */
@@ -456,4 +420,41 @@ public final class PDF417Common {
       2058, 2054, 1145, 1142, 2005, 2002, 1999, 2009, 1488, 1429, 1426, 2200, 1698, 1659, 1656, 1975, 1053, 1957, 1954,
       1001, 998, 1924, 1921, 1918, 1928, 937, 934, 931, 1879, 1876, 1873, 1870, 945, 1885, 1882, 1323, 1273, 1270,
       2105, 1202, 1199, 1196, 1211, 2061, 2057, 1576, 1543, 1540, 1484, 1481, 1478, 1491, 1700};
+
+  private PDF417Common() {
+  }
+
+  /**
+   * @param moduleBitCount values to sum
+   * @return sum of values
+   * @deprecated call {@link MathUtils#sum(int[])}
+   */
+  @Deprecated
+  public static int getBitCountSum(int[] moduleBitCount) {
+    return MathUtils.sum(moduleBitCount);
+  }
+
+  public static int[] toIntArray(Collection<Integer> list) {
+    if (list == null || list.isEmpty()) {
+      return EMPTY_INT_ARRAY;
+    }
+    int[] result = new int[list.size()];
+    int i = 0;
+    for (Integer integer : list) {
+      result[i++] = integer;
+    }
+    return result;
+  }
+
+  /**
+   * @param symbol encoded symbol to translate to a codeword
+   * @return the codeword corresponding to the symbol.
+   */
+  public static int getCodeword(int symbol) {
+    int i = Arrays.binarySearch(SYMBOL_TABLE, symbol & 0x3FFFF);
+    if (i < 0) {
+      return -1;
+    }
+    return (CODEWORD_TABLE[i] - 1) % NUMBER_OF_CODEWORDS;
+  }
 }

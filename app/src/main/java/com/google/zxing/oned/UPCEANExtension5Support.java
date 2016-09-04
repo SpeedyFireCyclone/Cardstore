@@ -38,77 +38,15 @@ final class UPCEANExtension5Support {
   private final int[] decodeMiddleCounters = new int[4];
   private final StringBuilder decodeRowStringBuffer = new StringBuilder();
 
-  Result decodeRow(int rowNumber, BitArray row, int[] extensionStartRange) throws NotFoundException {
-
-    StringBuilder result = decodeRowStringBuffer;
-    result.setLength(0);
-    int end = decodeMiddle(row, extensionStartRange, result);
-
-    String resultString = result.toString();
-    Map<ResultMetadataType,Object> extensionData = parseExtensionString(resultString);
-
-    Result extensionResult =
-        new Result(resultString,
-                   null,
-                   new ResultPoint[] {
-                       new ResultPoint((extensionStartRange[0] + extensionStartRange[1]) / 2.0f, (float) rowNumber),
-                       new ResultPoint((float) end, (float) rowNumber),
-                   },
-                   BarcodeFormat.UPC_EAN_EXTENSION);
-    if (extensionData != null) {
-      extensionResult.putAllMetadata(extensionData);
-    }
-    return extensionResult;
-  }
-
-  int decodeMiddle(BitArray row, int[] startRange, StringBuilder resultString) throws NotFoundException {
-    int[] counters = decodeMiddleCounters;
-    counters[0] = 0;
-    counters[1] = 0;
-    counters[2] = 0;
-    counters[3] = 0;
-    int end = row.getSize();
-    int rowOffset = startRange[1];
-
-    int lgPatternFound = 0;
-
-    for (int x = 0; x < 5 && rowOffset < end; x++) {
-      int bestMatch = UPCEANReader.decodeDigit(row, counters, rowOffset, UPCEANReader.L_AND_G_PATTERNS);
-      resultString.append((char) ('0' + bestMatch % 10));
-      for (int counter : counters) {
-        rowOffset += counter;
-      }
-      if (bestMatch >= 10) {
-        lgPatternFound |= 1 << (4 - x);
-      }
-      if (x != 4) {
-        // Read off separator if not last
-        rowOffset = row.getNextSet(rowOffset);
-        rowOffset = row.getNextUnset(rowOffset);
-      }
-    }
-
-    if (resultString.length() != 5) {
-      throw NotFoundException.getNotFoundInstance();
-    }
-
-    int checkDigit = determineCheckDigit(lgPatternFound);
-    if (extensionChecksum(resultString.toString()) != checkDigit) {
-      throw NotFoundException.getNotFoundInstance();
-    }
-    
-    return rowOffset;
-  }
-
   private static int extensionChecksum(CharSequence s) {
     int length = s.length();
     int sum = 0;
     for (int i = length - 2; i >= 0; i -= 2) {
-      sum += (int) s.charAt(i) - (int) '0';
+      sum += s.charAt(i) - '0';
     }
     sum *= 3;
     for (int i = length - 1; i >= 0; i -= 2) {
-      sum += (int) s.charAt(i) - (int) '0';
+      sum += s.charAt(i) - '0';
     }
     sum *= 3;
     return sum % 10;
@@ -176,6 +114,68 @@ final class UPCEANExtension5Support {
     int hundredths = rawAmount % 100;
     String hundredthsString = hundredths < 10 ? "0" + hundredths : String.valueOf(hundredths);
     return currency + unitsString + '.' + hundredthsString;
+  }
+
+  Result decodeRow(int rowNumber, BitArray row, int[] extensionStartRange) throws NotFoundException {
+
+    StringBuilder result = decodeRowStringBuffer;
+    result.setLength(0);
+    int end = decodeMiddle(row, extensionStartRange, result);
+
+    String resultString = result.toString();
+    Map<ResultMetadataType, Object> extensionData = parseExtensionString(resultString);
+
+    Result extensionResult =
+            new Result(resultString,
+                    null,
+                    new ResultPoint[]{
+                            new ResultPoint((extensionStartRange[0] + extensionStartRange[1]) / 2.0f, rowNumber),
+                            new ResultPoint(end, rowNumber),
+                    },
+                    BarcodeFormat.UPC_EAN_EXTENSION);
+    if (extensionData != null) {
+      extensionResult.putAllMetadata(extensionData);
+    }
+    return extensionResult;
+  }
+
+  private int decodeMiddle(BitArray row, int[] startRange, StringBuilder resultString) throws NotFoundException {
+    int[] counters = decodeMiddleCounters;
+    counters[0] = 0;
+    counters[1] = 0;
+    counters[2] = 0;
+    counters[3] = 0;
+    int end = row.getSize();
+    int rowOffset = startRange[1];
+
+    int lgPatternFound = 0;
+
+    for (int x = 0; x < 5 && rowOffset < end; x++) {
+      int bestMatch = UPCEANReader.decodeDigit(row, counters, rowOffset, UPCEANReader.L_AND_G_PATTERNS);
+      resultString.append((char) ('0' + bestMatch % 10));
+      for (int counter : counters) {
+        rowOffset += counter;
+      }
+      if (bestMatch >= 10) {
+        lgPatternFound |= 1 << (4 - x);
+      }
+      if (x != 4) {
+        // Read off separator if not last
+        rowOffset = row.getNextSet(rowOffset);
+        rowOffset = row.getNextUnset(rowOffset);
+      }
+    }
+
+    if (resultString.length() != 5) {
+      throw NotFoundException.getNotFoundInstance();
+    }
+
+    int checkDigit = determineCheckDigit(lgPatternFound);
+    if (extensionChecksum(resultString.toString()) != checkDigit) {
+      throw NotFoundException.getNotFoundInstance();
+    }
+
+    return rowOffset;
   }
 
 }

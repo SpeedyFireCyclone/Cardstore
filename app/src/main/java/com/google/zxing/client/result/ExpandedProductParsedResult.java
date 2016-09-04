@@ -29,6 +29,9 @@ package com.google.zxing.client.result;
 import java.util.Map;
 
 /**
+ * Represents a parsed result that encodes extended product information as encoded
+ * by the RSS format, like weight, price, dates, etc.
+ *
  * @author Antonio Manuel Benjumea Conde, Servinform, S.A.
  * @author Agustín Delgado, Servinform, S.A.
  */
@@ -87,13 +90,21 @@ public final class ExpandedProductParsedResult extends ParsedResult {
     this.uncommonAIs = uncommonAIs;
   }
 
+  private static boolean equalsOrNull(Object o1, Object o2) {
+    return o1 == null ? o2 == null : o1.equals(o2);
+  }
+
+  private static int hashNotNull(Object o) {
+    return o == null ? 0 : o.hashCode();
+  }
+
   @Override
-  public boolean equals(Object o){
+  public boolean equals(Object o) {
     if (!(o instanceof ExpandedProductParsedResult)) {
       return false;
     }
 
-    ExpandedProductParsedResult other = (ExpandedProductParsedResult)o;
+    ExpandedProductParsedResult other = (ExpandedProductParsedResult) o;
 
     return equalsOrNull(productID, other.productID)
         && equalsOrNull(sscc, other.sscc)
@@ -110,12 +121,8 @@ public final class ExpandedProductParsedResult extends ParsedResult {
         && equalsOrNull(uncommonAIs, other.uncommonAIs);
   }
 
-  private static boolean equalsOrNull(Object o1, Object o2) {
-    return o1 == null ? o2 == null : o1.equals(o2);
-  }
-
   @Override
-  public int hashCode(){
+  public int hashCode() {
     int hash = 0;
     hash ^= hashNotNull(productID);
     hash ^= hashNotNull(sscc);
@@ -131,10 +138,6 @@ public final class ExpandedProductParsedResult extends ParsedResult {
     hash ^= hashNotNull(priceCurrency);
     hash ^= hashNotNull(uncommonAIs);
     return hash;
-  }
-
-  private static int hashNotNull(Object o) {
-    return o == null ? 0 : o.hashCode();
   }
 
   public String getRawText() {

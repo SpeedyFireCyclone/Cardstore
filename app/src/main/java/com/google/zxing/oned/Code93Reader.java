@@ -37,14 +37,12 @@ import java.util.Map;
 public final class Code93Reader extends OneDReader {
 
   // Note that 'abcd' are dummy characters in place of control characters.
-  private static final String ALPHABET_STRING = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%abcd*";
-  private static final char[] ALPHABET = ALPHABET_STRING.toCharArray();
-
+  static final String ALPHABET_STRING = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%abcd*";
   /**
    * These represent the encodings of characters, as patterns of wide and narrow bars.
    * The 9 least-significant bits of each int correspond to the pattern of wide and narrow.
    */
-  private static final int[] CHARACTER_ENCODINGS = {
+  static final int[] CHARACTER_ENCODINGS = {
       0x114, 0x148, 0x144, 0x142, 0x128, 0x124, 0x122, 0x150, 0x112, 0x10A, // 0-9
       0x1A8, 0x1A4, 0x1A2, 0x194, 0x192, 0x18A, 0x168, 0x164, 0x162, 0x134, // A-J
       0x11A, 0x158, 0x14C, 0x146, 0x12C, 0x116, 0x1B4, 0x1B2, 0x1AC, 0x1A6, // K-T
@@ -52,6 +50,7 @@ public final class Code93Reader extends OneDReader {
       0x12E, 0x1D4, 0x1D2, 0x1CA, 0x16E, 0x176, 0x1AE, // - - %
       0x126, 0x1DA, 0x1D6, 0x132, 0x15E, // Control chars? $-*
   };
+  private static final char[] ALPHABET = ALPHABET_STRING.toCharArray();
   private static final int ASTERISK_ENCODING = CHARACTER_ENCODINGS[47];
 
   private final StringBuilder decodeRowResult;
@@ -62,113 +61,13 @@ public final class Code93Reader extends OneDReader {
     counters = new int[6];
   }
 
-  @Override
-  public Result decodeRow(int rowNumber, BitArray row, Map<DecodeHintType,?> hints)
-      throws NotFoundException, ChecksumException, FormatException {
-
-    int[] start = findAsteriskPattern(row);
-    // Read off white space    
-    int nextStart = row.getNextSet(start[1]);
-    int end = row.getSize();
-
-    int[] theCounters = counters;
-    Arrays.fill(theCounters, 0);
-    StringBuilder result = decodeRowResult;
-    result.setLength(0);
-
-    char decodedChar;
-    int lastStart;
-    do {
-      recordPattern(row, nextStart, theCounters);
-      int pattern = toPattern(theCounters);
-      if (pattern < 0) {
-        throw NotFoundException.getNotFoundInstance();
-      }
-      decodedChar = patternToChar(pattern);
-      result.append(decodedChar);
-      lastStart = nextStart;
-      for (int counter : theCounters) {
-        nextStart += counter;
-      }
-      // Read off white space
-      nextStart = row.getNextSet(nextStart);
-    } while (decodedChar != '*');
-    result.deleteCharAt(result.length() - 1); // remove asterisk
-
-    int lastPatternSize = 0;
-    for (int counter : theCounters) {
-      lastPatternSize += counter;
-    }
-
-    // Should be at least one more black module
-    if (nextStart == end || !row.get(nextStart)) {
-      throw NotFoundException.getNotFoundInstance();
-    }
-
-    if (result.length() < 2) {
-      // false positive -- need at least 2 checksum digits
-      throw NotFoundException.getNotFoundInstance();
-    }
-
-    checkChecksums(result);
-    // Remove checksum digits
-    result.setLength(result.length() - 2);
-
-    String resultString = decodeExtended(result);
-
-    float left = (float) (start[1] + start[0]) / 2.0f;
-    float right = lastStart + lastPatternSize / 2.0f;
-    return new Result(
-        resultString,
-        null,
-        new ResultPoint[]{
-            new ResultPoint(left, (float) rowNumber),
-            new ResultPoint(right, (float) rowNumber)},
-        BarcodeFormat.CODE_93);
-
-  }
-
-  private int[] findAsteriskPattern(BitArray row) throws NotFoundException {
-    int width = row.getSize();
-    int rowOffset = row.getNextSet(0);
-
-    Arrays.fill(counters, 0);
-    int[] theCounters = counters;
-    int patternStart = rowOffset;
-    boolean isWhite = false;
-    int patternLength = theCounters.length;
-
-    int counterPosition = 0;
-    for (int i = rowOffset; i < width; i++) {
-      if (row.get(i) ^ isWhite) {
-        theCounters[counterPosition]++;
-      } else {
-        if (counterPosition == patternLength - 1) {
-          if (toPattern(theCounters) == ASTERISK_ENCODING) {
-            return new int[]{patternStart, i};
-          }
-          patternStart += theCounters[0] + theCounters[1];
-          System.arraycopy(theCounters, 2, theCounters, 0, patternLength - 2);
-          theCounters[patternLength - 2] = 0;
-          theCounters[patternLength - 1] = 0;
-          counterPosition--;
-        } else {
-          counterPosition++;
-        }
-        theCounters[counterPosition] = 1;
-        isWhite = !isWhite;
-      }
-    }
-    throw NotFoundException.getNotFoundInstance();
-  }
-
   private static int toPattern(int[] counters) {
-    int max = counters.length;
     int sum = 0;
     for (int counter : counters) {
       sum += counter;
     }
     int pattern = 0;
+    int max = counters.length;
     for (int i = 0; i < max; i++) {
       int scaled = Math.round(counters[i] * 9.0f / sum);
       if (scaled < 1 || scaled > 4) {
@@ -282,6 +181,106 @@ public final class Code93Reader extends OneDReader {
     if (result.charAt(checkPosition) != ALPHABET[total % 47]) {
       throw ChecksumException.getChecksumInstance();
     }
+  }
+
+  @Override
+  public Result decodeRow(int rowNumber, BitArray row, Map<DecodeHintType, ?> hints)
+          throws NotFoundException, ChecksumException, FormatException {
+
+    int[] start = findAsteriskPattern(row);
+    // Read off white space
+    int nextStart = row.getNextSet(start[1]);
+    int end = row.getSize();
+
+    int[] theCounters = counters;
+    Arrays.fill(theCounters, 0);
+    StringBuilder result = decodeRowResult;
+    result.setLength(0);
+
+    char decodedChar;
+    int lastStart;
+    do {
+      recordPattern(row, nextStart, theCounters);
+      int pattern = toPattern(theCounters);
+      if (pattern < 0) {
+        throw NotFoundException.getNotFoundInstance();
+      }
+      decodedChar = patternToChar(pattern);
+      result.append(decodedChar);
+      lastStart = nextStart;
+      for (int counter : theCounters) {
+        nextStart += counter;
+      }
+      // Read off white space
+      nextStart = row.getNextSet(nextStart);
+    } while (decodedChar != '*');
+    result.deleteCharAt(result.length() - 1); // remove asterisk
+
+    int lastPatternSize = 0;
+    for (int counter : theCounters) {
+      lastPatternSize += counter;
+    }
+
+    // Should be at least one more black module
+    if (nextStart == end || !row.get(nextStart)) {
+      throw NotFoundException.getNotFoundInstance();
+    }
+
+    if (result.length() < 2) {
+      // false positive -- need at least 2 checksum digits
+      throw NotFoundException.getNotFoundInstance();
+    }
+
+    checkChecksums(result);
+    // Remove checksum digits
+    result.setLength(result.length() - 2);
+
+    String resultString = decodeExtended(result);
+
+    float left = (start[1] + start[0]) / 2.0f;
+    float right = lastStart + lastPatternSize / 2.0f;
+    return new Result(
+            resultString,
+            null,
+            new ResultPoint[]{
+                    new ResultPoint(left, rowNumber),
+                    new ResultPoint(right, rowNumber)},
+            BarcodeFormat.CODE_93);
+
+  }
+
+  private int[] findAsteriskPattern(BitArray row) throws NotFoundException {
+    int width = row.getSize();
+    int rowOffset = row.getNextSet(0);
+
+    Arrays.fill(counters, 0);
+    int[] theCounters = counters;
+    int patternStart = rowOffset;
+    boolean isWhite = false;
+    int patternLength = theCounters.length;
+
+    int counterPosition = 0;
+    for (int i = rowOffset; i < width; i++) {
+      if (row.get(i) ^ isWhite) {
+        theCounters[counterPosition]++;
+      } else {
+        if (counterPosition == patternLength - 1) {
+          if (toPattern(theCounters) == ASTERISK_ENCODING) {
+            return new int[]{patternStart, i};
+          }
+          patternStart += theCounters[0] + theCounters[1];
+          System.arraycopy(theCounters, 2, theCounters, 0, patternLength - 2);
+          theCounters[patternLength - 2] = 0;
+          theCounters[patternLength - 1] = 0;
+          counterPosition--;
+        } else {
+          counterPosition++;
+        }
+        theCounters[counterPosition] = 1;
+        isWhite = !isWhite;
+      }
+    }
+    throw NotFoundException.getNotFoundInstance();
   }
 
 }

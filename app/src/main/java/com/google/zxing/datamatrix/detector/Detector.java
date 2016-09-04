@@ -48,6 +48,49 @@ public final class Detector {
     rectangleDetector = new WhiteRectangleDetector(image);
   }
 
+  private static int distance(ResultPoint a, ResultPoint b) {
+    return MathUtils.round(ResultPoint.distance(a, b));
+  }
+
+  /**
+   * Increments the Integer associated with a key by one.
+   */
+  private static void increment(Map<ResultPoint, Integer> table, ResultPoint key) {
+    Integer value = table.get(key);
+    table.put(key, value == null ? 1 : value + 1);
+  }
+
+  private static BitMatrix sampleGrid(BitMatrix image,
+                                      ResultPoint topLeft,
+                                      ResultPoint bottomLeft,
+                                      ResultPoint bottomRight,
+                                      ResultPoint topRight,
+                                      int dimensionX,
+                                      int dimensionY) throws NotFoundException {
+
+    GridSampler sampler = GridSampler.getInstance();
+
+    return sampler.sampleGrid(image,
+            dimensionX,
+            dimensionY,
+            0.5f,
+            0.5f,
+            dimensionX - 0.5f,
+            0.5f,
+            dimensionX - 0.5f,
+            dimensionY - 0.5f,
+            0.5f,
+            dimensionY - 0.5f,
+            topLeft.getX(),
+            topLeft.getY(),
+            topRight.getX(),
+            topRight.getY(),
+            bottomRight.getX(),
+            bottomRight.getY(),
+            bottomLeft.getX(),
+            bottomLeft.getY());
+  }
+
   /**
    * <p>Detects a Data Matrix Code in an image.</p>
    *
@@ -137,16 +180,16 @@ public final class Detector {
     // The top right point is actually the corner of a module, which is one of the two black modules
     // adjacent to the white module at the top right. Tracing to that corner from either the top left
     // or bottom right should work here.
-    
+
     int dimensionTop = transitionsBetween(topLeft, topRight).getTransitions();
     int dimensionRight = transitionsBetween(bottomRight, topRight).getTransitions();
-    
+
     if ((dimensionTop & 0x01) == 1) {
       // it can't be odd, so, round... up?
       dimensionTop++;
     }
     dimensionTop += 2;
-    
+
     if ((dimensionRight & 0x01) == 1) {
       // it can't be odd, so, round... up?
       dimensionRight++;
@@ -164,7 +207,7 @@ public final class Detector {
 
       correctedTopRight =
           correctTopRightRectangular(bottomLeft, bottomRight, topLeft, topRight, dimensionTop, dimensionRight);
-      if (correctedTopRight == null){
+      if (correctedTopRight == null) {
         correctedTopRight = topRight;
       }
 
@@ -182,14 +225,14 @@ public final class Detector {
       }
 
       bits = sampleGrid(image, topLeft, bottomLeft, bottomRight, correctedTopRight, dimensionTop, dimensionRight);
-          
+
     } else {
       // The matrix is square
-        
+
       int dimension = Math.min(dimensionRight, dimensionTop);
       // correct top right point to match the white module
       correctedTopRight = correctTopRight(bottomLeft, bottomRight, topLeft, topRight, dimension);
-      if (correctedTopRight == null){
+      if (correctedTopRight == null) {
         correctedTopRight = topRight;
       }
 
@@ -224,19 +267,19 @@ public final class Detector {
                                                  int dimensionTop,
                                                  int dimensionRight) {
 
-    float corr = distance(bottomLeft, bottomRight) / (float)dimensionTop;
+    float corr = distance(bottomLeft, bottomRight) / (float) dimensionTop;
     int norm = distance(topLeft, topRight);
     float cos = (topRight.getX() - topLeft.getX()) / norm;
     float sin = (topRight.getY() - topLeft.getY()) / norm;
 
-    ResultPoint c1 = new ResultPoint(topRight.getX()+corr*cos, topRight.getY()+corr*sin);
+    ResultPoint c1 = new ResultPoint(topRight.getX() + corr * cos, topRight.getY() + corr * sin);
 
-    corr = distance(bottomLeft, topLeft) / (float)dimensionRight;
+    corr = distance(bottomLeft, topLeft) / (float) dimensionRight;
     norm = distance(bottomRight, topRight);
     cos = (topRight.getX() - bottomRight.getX()) / norm;
     sin = (topRight.getY() - bottomRight.getY()) / norm;
 
-    ResultPoint c2 = new ResultPoint(topRight.getX()+corr*cos, topRight.getY()+corr*sin);
+    ResultPoint c2 = new ResultPoint(topRight.getX() + corr * cos, topRight.getY() + corr * sin);
 
     if (!isValid(c1)) {
       if (isValid(c2)) {
@@ -244,7 +287,7 @@ public final class Detector {
       }
       return null;
     }
-    if (!isValid(c2)){
+    if (!isValid(c2)) {
       return c1;
     }
 
@@ -253,7 +296,7 @@ public final class Detector {
     int l2 = Math.abs(dimensionTop - transitionsBetween(topLeft, c2).getTransitions()) +
     Math.abs(dimensionRight - transitionsBetween(bottomRight, c2).getTransitions());
 
-    if (l1 <= l2){
+    if (l1 <= l2) {
       return c1;
     }
 
@@ -304,49 +347,6 @@ public final class Detector {
 
   private boolean isValid(ResultPoint p) {
     return p.getX() >= 0 && p.getX() < image.getWidth() && p.getY() > 0 && p.getY() < image.getHeight();
-  }
-
-  private static int distance(ResultPoint a, ResultPoint b) {
-    return MathUtils.round(ResultPoint.distance(a, b));
-  }
-
-  /**
-   * Increments the Integer associated with a key by one.
-   */
-  private static void increment(Map<ResultPoint,Integer> table, ResultPoint key) {
-    Integer value = table.get(key);
-    table.put(key, value == null ? 1 : value + 1);
-  }
-
-  private static BitMatrix sampleGrid(BitMatrix image,
-                                      ResultPoint topLeft,
-                                      ResultPoint bottomLeft,
-                                      ResultPoint bottomRight,
-                                      ResultPoint topRight,
-                                      int dimensionX,
-                                      int dimensionY) throws NotFoundException {
-
-    GridSampler sampler = GridSampler.getInstance();
-
-    return sampler.sampleGrid(image,
-                              dimensionX,
-                              dimensionY,
-                              0.5f,
-                              0.5f,
-                              dimensionX - 0.5f,
-                              0.5f,
-                              dimensionX - 0.5f,
-                              dimensionY - 0.5f,
-                              0.5f,
-                              dimensionY - 0.5f,
-                              topLeft.getX(),
-                              topLeft.getY(),
-                              topRight.getX(),
-                              topRight.getY(),
-                              bottomRight.getX(),
-                              bottomRight.getY(),
-                              bottomLeft.getX(),
-                              bottomLeft.getY());
   }
 
   /**
@@ -416,7 +416,7 @@ public final class Detector {
       return to;
     }
 
-    public int getTransitions() {
+    int getTransitions() {
       return transitions;
     }
     

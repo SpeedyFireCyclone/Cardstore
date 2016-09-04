@@ -37,8 +37,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         if (!firebasePersistent) {
             FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+            firebasePersistent = true;
         }
-        firebasePersistent = true;
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         database = FirebaseDatabase.getInstance();
         try {
