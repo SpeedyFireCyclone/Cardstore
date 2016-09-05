@@ -30,6 +30,7 @@ import java.util.Map;
  */
 public final class EAN8Writer extends UPCEANWriter {
 
+
   private static final int CODE_WIDTH = 3 + // start guard
       (7 * 4) + // left bars
       5 + // middle guard
@@ -63,20 +64,20 @@ public final class EAN8Writer extends UPCEANWriter {
     boolean[] result = new boolean[CODE_WIDTH];
     int pos = 0;
 
-    pos += appendPattern(result, pos, UPCEANReader.START_END_PATTERN, true);
+    pos += appendPattern(result, pos, UPCEANPatterns.START_END_PATTERN, true);
 
     for (int i = 0; i <= 3; i++) {
       int digit = Integer.parseInt(contents.substring(i, i + 1));
-      pos += appendPattern(result, pos, UPCEANReader.L_PATTERNS[digit], false);
+      pos += appendPattern(result, pos, UPCEANPatterns.L_PATTERNS[digit], false);
     }
 
-    pos += appendPattern(result, pos, UPCEANReader.MIDDLE_PATTERN, false);
+    pos += appendPattern(result, pos, UPCEANPatterns.MIDDLE_PATTERN, false);
 
     for (int i = 4; i <= 7; i++) {
       int digit = Integer.parseInt(contents.substring(i, i + 1));
-      pos += appendPattern(result, pos, UPCEANReader.L_PATTERNS[digit], true);
+      pos += appendPattern(result, pos, UPCEANPatterns.L_PATTERNS[digit], true);
     }
-    appendPattern(result, pos, UPCEANReader.START_END_PATTERN, true);
+    appendPattern(result, pos, UPCEANPatterns.START_END_PATTERN, true);
 
     return result;
   }

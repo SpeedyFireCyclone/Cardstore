@@ -76,45 +76,43 @@ public class DisplayCodeActivity extends Activity {
     public BarcodeFormat formatTranslator(String formatString) {
 
         switch (formatString) {
-            case ("AZTEC"):
-                format = BarcodeFormat.AZTEC;
-            case ("CODABAR"):
-                format = BarcodeFormat.CODABAR;
-            case ("CODE_39"):
-                format = BarcodeFormat.CODE_39;
-            case ("CODE_93"):
-                format = BarcodeFormat.CODE_93;
-            case ("CODE_128"):
-                format = BarcodeFormat.CODE_128;
-            case ("DATA_MATRIX"):
-                format = BarcodeFormat.DATA_MATRIX;
-            case ("EAN_8"):
-                format = BarcodeFormat.EAN_8;
-            case ("EAN_13"):
-                format = BarcodeFormat.EAN_13;
-            case ("ITF"):
-                format = BarcodeFormat.ITF;
-            case ("PDF_417"):
-                format = BarcodeFormat.PDF_417;
-            case ("QR_CODE"):
-                format = BarcodeFormat.QR_CODE;
-            case ("RSS_14"): //FIXME: Not generating.
-                format = BarcodeFormat.RSS_14;
-            case ("RSS_EXPANDED"): //FIXME: Not generating.
-                format = BarcodeFormat.RSS_EXPANDED;
-            case ("UPC_A"):
-                format = BarcodeFormat.UPC_A;
-            case ("UPC_E"):
-                format = BarcodeFormat.UPC_E;
-            case ("UPC_EAN_EXTENSION"): //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
-                format = BarcodeFormat.UPC_EAN_EXTENSION;
+            case "AZTEC":
+                return BarcodeFormat.AZTEC;
+            case "CODABAR":
+                return BarcodeFormat.CODABAR;
+            case "CODE_39":
+                return BarcodeFormat.CODE_39;
+            case "CODE_93":
+                return BarcodeFormat.CODE_93;
+            case "CODE_128":
+                return BarcodeFormat.CODE_128;
+            case "DATA_MATRIX":
+                return BarcodeFormat.DATA_MATRIX;
+            case "EAN_8":
+                return BarcodeFormat.EAN_8;
+            case "EAN_13":
+                return BarcodeFormat.EAN_13;
+            case "ITF":
+                return BarcodeFormat.ITF;
+            case "PDF_417":
+                return BarcodeFormat.PDF_417;
+            case "QR_CODE":
+                return BarcodeFormat.QR_CODE;
+            case "RSS_14": //FIXME: Not generating.
+                return BarcodeFormat.RSS_14;
+            case "RSS_EXPANDED": //FIXME: Not generating.
+                return BarcodeFormat.RSS_EXPANDED;
+            case "UPC_A":
+                return BarcodeFormat.UPC_A;
+            case "UPC_E":
+                return BarcodeFormat.UPC_E;
+            case "UPC_EAN_EXTENSION": //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
+                return BarcodeFormat.UPC_EAN_EXTENSION;
             default:
                 //Default to QR to avoid NPE.
-                format = BarcodeFormat.QR_CODE;
                 FirebaseCrash.report(new Exception("Unknown Barcodeformat for translation"));
+                return BarcodeFormat.QR_CODE;
         }
-
-        return format;
     }
 
     Bitmap encodeAsBitmap(String contentsToEncode, BarcodeFormat format, int img_width, int img_height) throws WriterException {

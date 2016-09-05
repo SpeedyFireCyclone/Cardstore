@@ -11,14 +11,12 @@
     tools:context="tk.speedyfirecyclone.cardstore.LoginActivity">
 
     <ImageView
-        android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:src="@drawable/cardstore" />
 
     <TextView
-        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="12dp"
@@ -35,7 +33,6 @@
         android:layout_marginTop="32dp" />
 
     <Button
-        android:id="@+id/anonymousButton"
         android:layout_width="175dp"
         android:layout_height="40dp"
         android:layout_gravity="center_horizontal"

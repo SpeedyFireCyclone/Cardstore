@@ -194,10 +194,6 @@ public final class Encoder {
     return -1;
   }
 
-  public static Mode chooseMode(String content) {
-    return chooseMode(content, null);
-  }
-
   /**
    * Choose the best mode by examining the content. Note that 'encoding' is used as a hint;
    * if it is Shift_JIS, and the input is only double-byte Kanji, then we return {@link Mode#KANJI}.

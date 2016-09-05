@@ -62,26 +62,6 @@ public final class Version {
     this.totalCodewords = total;
   }
 
-  public int getVersionNumber() {
-    return versionNumber;
-  }
-
-  public int[] getAlignmentPatternCenters() {
-    return alignmentPatternCenters;
-  }
-
-  public int getTotalCodewords() {
-    return totalCodewords;
-  }
-
-  public int getDimensionForVersion() {
-    return 17 + 4 * versionNumber;
-  }
-
-  public ECBlocks getECBlocksForLevel(ErrorCorrectionLevel ecLevel) {
-    return ecBlocks[ecLevel.ordinal()];
-  }
-
   /**
    * <p>Deduces version information purely from QR Code dimensions.</p>
    *
@@ -131,112 +111,6 @@ public final class Version {
     }
     // If we didn't find a close enough match, fail
     return null;
-  }
-
-  /**
-   * See ISO 18004:2006 Annex E
-   */
-  BitMatrix buildFunctionPattern() {
-    int dimension = getDimensionForVersion();
-    BitMatrix bitMatrix = new BitMatrix(dimension);
-
-    // Top left finder pattern + separator + format
-    bitMatrix.setRegion(0, 0, 9, 9);
-    // Top right finder pattern + separator + format
-    bitMatrix.setRegion(dimension - 8, 0, 8, 9);
-    // Bottom left finder pattern + separator + format
-    bitMatrix.setRegion(0, dimension - 8, 9, 8);
-
-    // Alignment patterns
-    int max = alignmentPatternCenters.length;
-    for (int x = 0; x < max; x++) {
-      int i = alignmentPatternCenters[x] - 2;
-      for (int y = 0; y < max; y++) {
-        if ((x == 0 && (y == 0 || y == max - 1)) || (x == max - 1 && y == 0)) {
-          // No alignment patterns near the three finder paterns
-          continue;
-        }
-        bitMatrix.setRegion(alignmentPatternCenters[y] - 2, i, 5, 5);
-      }
-    }
-
-    // Vertical timing pattern
-    bitMatrix.setRegion(6, 9, 1, dimension - 17);
-    // Horizontal timing pattern
-    bitMatrix.setRegion(9, 6, dimension - 17, 1);
-
-    if (versionNumber > 6) {
-      // Version info, top right
-      bitMatrix.setRegion(dimension - 11, 0, 3, 6);
-      // Version info, bottom left
-      bitMatrix.setRegion(0, dimension - 11, 6, 3);
-    }
-
-    return bitMatrix;
-  }
-
-  /**
-   * <p>Encapsulates a set of error-correction blocks in one symbol version. Most versions will
-   * use blocks of differing sizes within one version, so, this encapsulates the parameters for
-   * each set of blocks. It also holds the number of error-correction codewords per block since it
-   * will be the same across all blocks within one version.</p>
-   */
-  public static final class ECBlocks {
-    private final int ecCodewordsPerBlock;
-    private final ECB[] ecBlocks;
-
-    ECBlocks(int ecCodewordsPerBlock, ECB... ecBlocks) {
-      this.ecCodewordsPerBlock = ecCodewordsPerBlock;
-      this.ecBlocks = ecBlocks;
-    }
-
-    public int getECCodewordsPerBlock() {
-      return ecCodewordsPerBlock;
-    }
-
-    public int getNumBlocks() {
-      int total = 0;
-      for (ECB ecBlock : ecBlocks) {
-        total += ecBlock.getCount();
-      }
-      return total;
-    }
-
-    public int getTotalECCodewords() {
-      return ecCodewordsPerBlock * getNumBlocks();
-    }
-
-    public ECB[] getECBlocks() {
-      return ecBlocks;
-    }
-  }
-
-  /**
-   * <p>Encapsualtes the parameters for one error-correction block in one symbol version.
-   * This includes the number of data codewords, and the number of times a block with these
-   * parameters is used consecutively in the QR code version's format.</p>
-   */
-  public static final class ECB {
-    private final int count;
-    private final int dataCodewords;
-
-    ECB(int count, int dataCodewords) {
-      this.count = count;
-      this.dataCodewords = dataCodewords;
-    }
-
-    public int getCount() {
-      return count;
-    }
-
-    public int getDataCodewords() {
-      return dataCodewords;
-    }
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(versionNumber);
   }
 
   /**
@@ -573,6 +447,132 @@ public final class Version {
             new ECBlocks(30, new ECB(20, 15),
                 new ECB(61, 16)))
     };
+  }
+
+  public int getVersionNumber() {
+    return versionNumber;
+  }
+
+  public int[] getAlignmentPatternCenters() {
+    return alignmentPatternCenters;
+  }
+
+  public int getTotalCodewords() {
+    return totalCodewords;
+  }
+
+  public int getDimensionForVersion() {
+    return 17 + 4 * versionNumber;
+  }
+
+  public ECBlocks getECBlocksForLevel(ErrorCorrectionLevel ecLevel) {
+    return ecBlocks[ecLevel.ordinal()];
+  }
+
+  /**
+   * See ISO 18004:2006 Annex E
+   */
+  BitMatrix buildFunctionPattern() {
+    int dimension = getDimensionForVersion();
+    BitMatrix bitMatrix = new BitMatrix(dimension);
+
+    // Top left finder pattern + separator + format
+    bitMatrix.setRegion(0, 0, 9, 9);
+    // Top right finder pattern + separator + format
+    bitMatrix.setRegion(dimension - 8, 0, 8, 9);
+    // Bottom left finder pattern + separator + format
+    bitMatrix.setRegion(0, dimension - 8, 9, 8);
+
+    // Alignment patterns
+    int max = alignmentPatternCenters.length;
+    for (int x = 0; x < max; x++) {
+      int i = alignmentPatternCenters[x] - 2;
+      for (int y = 0; y < max; y++) {
+        if ((x == 0 && (y == 0 || y == max - 1)) || (x == max - 1 && y == 0)) {
+          // No alignment patterns near the three finder paterns
+          continue;
+        }
+        bitMatrix.setRegion(alignmentPatternCenters[y] - 2, i, 5, 5);
+      }
+    }
+
+    // Vertical timing pattern
+    bitMatrix.setRegion(6, 9, 1, dimension - 17);
+    // Horizontal timing pattern
+    bitMatrix.setRegion(9, 6, dimension - 17, 1);
+
+    if (versionNumber > 6) {
+      // Version info, top right
+      bitMatrix.setRegion(dimension - 11, 0, 3, 6);
+      // Version info, bottom left
+      bitMatrix.setRegion(0, dimension - 11, 6, 3);
+    }
+
+    return bitMatrix;
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(versionNumber);
+  }
+
+  /**
+   * <p>Encapsulates a set of error-correction blocks in one symbol version. Most versions will
+   * use blocks of differing sizes within one version, so, this encapsulates the parameters for
+   * each set of blocks. It also holds the number of error-correction codewords per block since it
+   * will be the same across all blocks within one version.</p>
+   */
+  public static final class ECBlocks {
+    private final int ecCodewordsPerBlock;
+    private final ECB[] ecBlocks;
+
+    ECBlocks(int ecCodewordsPerBlock, ECB... ecBlocks) {
+      this.ecCodewordsPerBlock = ecCodewordsPerBlock;
+      this.ecBlocks = ecBlocks;
+    }
+
+    public int getECCodewordsPerBlock() {
+      return ecCodewordsPerBlock;
+    }
+
+    public int getNumBlocks() {
+      int total = 0;
+      for (ECB ecBlock : ecBlocks) {
+        total += ecBlock.getCount();
+      }
+      return total;
+    }
+
+    public int getTotalECCodewords() {
+      return ecCodewordsPerBlock * getNumBlocks();
+    }
+
+    public ECB[] getECBlocks() {
+      return ecBlocks;
+    }
+  }
+
+  /**
+   * <p>Encapsualtes the parameters for one error-correction block in one symbol version.
+   * This includes the number of data codewords, and the number of times a block with these
+   * parameters is used consecutively in the QR code version's format.</p>
+   */
+  public static final class ECB {
+    private final int count;
+    private final int dataCodewords;
+
+    ECB(int count, int dataCodewords) {
+      this.count = count;
+      this.dataCodewords = dataCodewords;
+    }
+
+    public int getCount() {
+      return count;
+    }
+
+    public int getDataCodewords() {
+      return dataCodewords;
+    }
   }
 
 }

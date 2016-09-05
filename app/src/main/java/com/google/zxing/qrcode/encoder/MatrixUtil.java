@@ -109,7 +109,6 @@ final class MatrixUtil {
   // From Appendix C in JISX0510:2004 (p.65).
   private static final int TYPE_INFO_POLY = 0x537;
   private static final int TYPE_INFO_MASK_PATTERN = 0x5412;
-
   private MatrixUtil() {
     // do nothing
   }

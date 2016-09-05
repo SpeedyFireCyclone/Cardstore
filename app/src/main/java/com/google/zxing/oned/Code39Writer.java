@@ -29,6 +29,16 @@ import java.util.Map;
  * @author erik.barbara@gmail.com (Erik Barbara)
  */
 public final class Code39Writer extends OneDimensionalCodeWriter {
+  static final int[] CHARACTER_ENCODINGS = {
+          0x034, 0x121, 0x061, 0x160, 0x031, 0x130, 0x070, 0x025, 0x124, 0x064, // 0-9
+          0x109, 0x049, 0x148, 0x019, 0x118, 0x058, 0x00D, 0x10C, 0x04C, 0x01C, // A-J
+          0x103, 0x043, 0x142, 0x013, 0x112, 0x052, 0x007, 0x106, 0x046, 0x016, // K-T
+          0x181, 0x0C1, 0x1C0, 0x091, 0x190, 0x0D0, 0x085, 0x184, 0x0C4, 0x094, // U-*
+          0x0A8, 0x0A2, 0x08A, 0x02A // $-%
+  };
+
+  static final int ASTERISK_ENCODING = CHARACTER_ENCODINGS[39];
+  static final String ALPHABET_STRING = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *$/+%";
 
   private static void toIntArray(int a, int[] toReturn) {
     for (int i = 0; i < 9; i++) {
@@ -60,28 +70,28 @@ public final class Code39Writer extends OneDimensionalCodeWriter {
     int[] widths = new int[9];
     int codeWidth = 24 + 1 + length;
     for (int i = 0; i < length; i++) {
-      int indexInString = Code39Reader.ALPHABET_STRING.indexOf(contents.charAt(i));
+      int indexInString = ALPHABET_STRING.indexOf(contents.charAt(i));
       if (indexInString < 0) {
         throw new IllegalArgumentException("Bad contents: " + contents);
       }
-      toIntArray(Code39Reader.CHARACTER_ENCODINGS[indexInString], widths);
+      toIntArray(CHARACTER_ENCODINGS[indexInString], widths);
       for (int width : widths) {
         codeWidth += width;
       }
     }
     boolean[] result = new boolean[codeWidth];
-    toIntArray(Code39Reader.ASTERISK_ENCODING, widths);
+    toIntArray(ASTERISK_ENCODING, widths);
     int pos = appendPattern(result, 0, widths, true);
     int[] narrowWhite = {1};
     pos += appendPattern(result, pos, narrowWhite, false);
     //append next character to byte matrix
     for (int i = 0; i < length; i++) {
-      int indexInString = Code39Reader.ALPHABET_STRING.indexOf(contents.charAt(i));
-      toIntArray(Code39Reader.CHARACTER_ENCODINGS[indexInString], widths);
+      int indexInString = ALPHABET_STRING.indexOf(contents.charAt(i));
+      toIntArray(CHARACTER_ENCODINGS[indexInString], widths);
       pos += appendPattern(result, pos, widths, true);
       pos += appendPattern(result, pos, narrowWhite, false);
     }
-    toIntArray(Code39Reader.ASTERISK_ENCODING, widths);
+    toIntArray(ASTERISK_ENCODING, widths);
     appendPattern(result, pos, widths, true);
     return result;
   }

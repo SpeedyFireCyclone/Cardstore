@@ -89,10 +89,6 @@ public enum CharacterSetECI {
     this.otherEncodingNames = otherEncodingNames;
   }
 
-  public int getValue() {
-    return values[0];
-  }
-
   /**
    * @param value character set ECI value
    * @return {@code CharacterSetECI} representing ECI of given value, or null if it is legal but
@@ -113,6 +109,10 @@ public enum CharacterSetECI {
    */
   public static CharacterSetECI getCharacterSetECIByName(String name) {
     return NAME_TO_ECI.get(name);
+  }
+
+  public int getValue() {
+    return values[0];
   }
 
 }

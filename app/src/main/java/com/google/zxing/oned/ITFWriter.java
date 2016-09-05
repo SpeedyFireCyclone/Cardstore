@@ -30,6 +30,18 @@ import java.util.Map;
  */
 public final class ITFWriter extends OneDimensionalCodeWriter {
 
+  static final int[][] PATTERNS = {
+          {1, 1, 3, 3, 1}, // 0
+          {3, 1, 1, 1, 3}, // 1
+          {1, 3, 1, 1, 3}, // 2
+          {3, 3, 1, 1, 1}, // 3
+          {1, 1, 3, 1, 3}, // 4
+          {3, 1, 3, 1, 1}, // 5
+          {1, 3, 3, 1, 1}, // 6
+          {1, 1, 1, 3, 3}, // 7
+          {3, 1, 1, 3, 1}, // 8
+          {1, 3, 1, 3, 1}  // 9
+  };
   private static final int[] START_PATTERN = {1, 1, 1, 1};
   private static final int[] END_PATTERN = {3, 1, 1};
 
@@ -63,8 +75,8 @@ public final class ITFWriter extends OneDimensionalCodeWriter {
       int two = Character.digit(contents.charAt(i + 1), 10);
       int[] encoding = new int[18];
       for (int j = 0; j < 5; j++) {
-        encoding[2 * j] = ITFReader.PATTERNS[one][j];
-        encoding[2 * j + 1] = ITFReader.PATTERNS[two][j];
+        encoding[2 * j] = PATTERNS[one][j];
+        encoding[2 * j + 1] = PATTERNS[two][j];
       }
       pos += appendPattern(result, pos, encoding, true);
     }

@@ -23,10 +23,26 @@ package com.google.zxing.oned;
  */
 public final class CodaBarWriter extends OneDimensionalCodeWriter {
 
+    static final char[] ALPHABET = "0123456789-$:/.+ABCD".toCharArray();
+    static final int[] CHARACTER_ENCODINGS = {
+            0x003, 0x006, 0x009, 0x060, 0x012, 0x042, 0x021, 0x024, 0x030, 0x048, // 0-9
+            0x00c, 0x018, 0x045, 0x051, 0x054, 0x015, 0x01A, 0x029, 0x00B, 0x00E, // -$:/.+ABCD
+    };
   private static final char[] START_END_CHARS = {'A', 'B', 'C', 'D'};
   private static final char[] ALT_START_END_CHARS = {'T', 'N', '*', 'E'};
   private static final char[] CHARS_WHICH_ARE_TEN_LENGTH_EACH_AFTER_DECODED = {'/', ':', '+', '.'};
   private static final char DEFAULT_GUARD = START_END_CHARS[0];
+
+    static boolean arrayContains(char[] array, char key) {
+        if (array != null) {
+            for (char c : array) {
+                if (c == key) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
   @Override
   public boolean[] encode(String contents) {
@@ -38,10 +54,10 @@ public final class CodaBarWriter extends OneDimensionalCodeWriter {
       // Verify input and calculate decoded length.
       char firstChar = Character.toUpperCase(contents.charAt(0));
       char lastChar = Character.toUpperCase(contents.charAt(contents.length() - 1));
-      boolean startsNormal = CodaBarReader.arrayContains(START_END_CHARS, firstChar);
-      boolean endsNormal = CodaBarReader.arrayContains(START_END_CHARS, lastChar);
-      boolean startsAlt = CodaBarReader.arrayContains(ALT_START_END_CHARS, firstChar);
-      boolean endsAlt = CodaBarReader.arrayContains(ALT_START_END_CHARS, lastChar);
+        boolean startsNormal = arrayContains(START_END_CHARS, firstChar);
+        boolean endsNormal = arrayContains(START_END_CHARS, lastChar);
+        boolean startsAlt = arrayContains(ALT_START_END_CHARS, firstChar);
+        boolean endsAlt = arrayContains(ALT_START_END_CHARS, lastChar);
       if (startsNormal) {
         if (!endsNormal) {
           throw new IllegalArgumentException("Invalid start/end guards: " + contents);
@@ -67,7 +83,7 @@ public final class CodaBarWriter extends OneDimensionalCodeWriter {
     for (int i = 1; i < contents.length() - 1; i++) {
       if (Character.isDigit(contents.charAt(i)) || contents.charAt(i) == '-' || contents.charAt(i) == '$') {
         resultLength += 9;
-      } else if (CodaBarReader.arrayContains(CHARS_WHICH_ARE_TEN_LENGTH_EACH_AFTER_DECODED, contents.charAt(i))) {
+      } else if (arrayContains(CHARS_WHICH_ARE_TEN_LENGTH_EACH_AFTER_DECODED, contents.charAt(i))) {
         resultLength += 10;
       } else {
         throw new IllegalArgumentException("Cannot encode : '" + contents.charAt(i) + '\'');
@@ -98,10 +114,10 @@ public final class CodaBarWriter extends OneDimensionalCodeWriter {
         }
       }
       int code = 0;
-      for (int i = 0; i < CodaBarReader.ALPHABET.length; i++) {
+        for (int i = 0; i < ALPHABET.length; i++) {
         // Found any, because I checked above.
-        if (c == CodaBarReader.ALPHABET[i]) {
-          code = CodaBarReader.CHARACTER_ENCODINGS[i];
+            if (c == ALPHABET[i]) {
+                code = CHARACTER_ENCODINGS[i];
           break;
         }
       }
