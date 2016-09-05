@@ -22,12 +22,12 @@ public class AboutActivity extends AppCompatActivity {
             PackageInfo pInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             String VN = pInfo.versionName;
             int VC = pInfo.versionCode;
-            String ConcatenatedVersion = "Version name: " + VN + "\n\nVersion code: " + VC;
+            String ConcatenatedVersion = "Version name: " + VN + "\nVersion code: " + VC;
             aboutText.setText(ConcatenatedVersion);
         } catch (PackageManager.NameNotFoundException e) {
             FirebaseCrash.report(e);
             Log.e("VersionInfo", e.getLocalizedMessage());
-            aboutText.setText("Failed to get version information'.\n\nA report has been sent.");
+            aboutText.setText("Failed to get version information'.\nA report has been sent.");
         }
 
         TextView IDsText = (TextView) findViewById(R.id.IDsText);

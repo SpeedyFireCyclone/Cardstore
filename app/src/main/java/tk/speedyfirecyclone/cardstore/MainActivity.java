@@ -29,6 +29,7 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -131,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.overflowFOSS:
-                Intent FOSS = new Intent(this, Licenses.class);
+                Intent FOSS = new Intent(this, LicensesActivity.class);
                 startActivity(FOSS);
                 return true;
             case R.id.overflowINFO:
@@ -191,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
             if (result.isSuccess()) {
                 // Google Sign In was successful, authenticate with Firebase
                 GoogleSignInAccount account = result.getSignInAccount();
-                AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
+                final AuthCredential credential = GoogleAuthProvider.getCredential(account.getIdToken(), null);
                 FirebaseAuth.getInstance().getCurrentUser().linkWithCredential(credential)
                         .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                             @Override
@@ -201,9 +202,16 @@ public class MainActivity extends AppCompatActivity {
                                 // If sign in fails, display a message to the user. If sign in succeeds
                                 // the auth state listener will be notified and logic to handle the
                                 // signed in user can be handled in the listener.
-                                if (!task.isSuccessful()) { //TODO: Actually handle the case where an account is already logged in instead of apologizing.
-                                    Toast.makeText(MainActivity.this, "Adding account failed because it's already being used.\nPlease clear the app's data and login with Google. Sorry for the trouble, I'm working on a more user friendly fix.",
-                                            Toast.LENGTH_LONG).show();
+                                if (!task.isSuccessful()) {
+                                    if (task.getException().getMessage().equals("This credential is already associated with a different user account.")) {
+                                        FirebaseAuth.getInstance().getCurrentUser().delete();
+                                        FirebaseAuth.getInstance().signOut();
+                                        FirebaseAuth.getInstance().signInWithCredential(credential);
+                                        recreate();
+                                    } else {
+                                        FirebaseCrash.report(task.getException());
+                                        Toast.makeText(MainActivity.this, "Something went wrong, a bug report has been filed.", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             }
                         });

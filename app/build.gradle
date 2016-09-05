@@ -7,8 +7,8 @@ android {
         applicationId "tk.speedyfirecyclone.cardstore"
         minSdkVersion 21
         targetSdkVersion 24
-        versionCode 9
-        versionName "040916"
+        versionCode 11
+        versionName "050916"
     }
 
     buildTypes {
