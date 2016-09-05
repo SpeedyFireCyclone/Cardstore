@@ -75,42 +75,43 @@ public class DisplayCodeActivity extends Activity {
     //Translate and return the format from string to BarcodeFormat
     public BarcodeFormat formatTranslator(String formatString) {
 
-        if (formatString.equals("AZTEC")) {
-            format = BarcodeFormat.AZTEC;
-        } else if (formatString.equals("CODABAR")) {
-            format = BarcodeFormat.CODABAR;
-        } else if (formatString.equals("CODE_39")) {
-            format = BarcodeFormat.CODE_39;
-        } else if (formatString.equals("CODE_93")) {
-            format = BarcodeFormat.CODE_93;
-        } else if (formatString.equals("CODE_128")) {
-            format = BarcodeFormat.CODE_128;
-        } else if (formatString.equals("DATA_MATRIX")) {
-            format = BarcodeFormat.DATA_MATRIX;
-        } else if (formatString.equals("EAN_8")) {
-            format = BarcodeFormat.EAN_8;
-        } else if (formatString.equals("EAN_13")) {
-            format = BarcodeFormat.EAN_13;
-        } else if (formatString.equals("ITF")) {
-            format = BarcodeFormat.ITF;
-        } else if (formatString.equals("PDF_417")) {
-            format = BarcodeFormat.PDF_417;
-        } else if (formatString.equals("QR_CODE")) {
-            format = BarcodeFormat.QR_CODE;
-        } else if (formatString.equals("RSS_14")) { //FIXME: Not generating.
-            format = BarcodeFormat.RSS_14;
-        } else if (formatString.equals("RSS_EXPANDED")) { //FIXME: Not generating.
-            format = BarcodeFormat.RSS_EXPANDED;
-        } else if (formatString.equals("UPC_A")) {
-            format = BarcodeFormat.UPC_A;
-        } else if (formatString.equals("UPC_E")) {
-            format = BarcodeFormat.UPC_E;
-        } else if (formatString.equals("UPC_EAN_EXTENSION")) { //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
-            format = BarcodeFormat.UPC_EAN_EXTENSION;
-        } else {
-            //Safety measure to avoid null pointer exception.
-            format = BarcodeFormat.QR_CODE;
-            FirebaseCrash.report(new Exception("Unknown Barcodeformat for translation"));
+        switch (formatString) {
+            case ("AZTEC"):
+                format = BarcodeFormat.AZTEC;
+            case ("CODABAR"):
+                format = BarcodeFormat.CODABAR;
+            case ("CODE_39"):
+                format = BarcodeFormat.CODE_39;
+            case ("CODE_93"):
+                format = BarcodeFormat.CODE_93;
+            case ("CODE_128"):
+                format = BarcodeFormat.CODE_128;
+            case ("DATA_MATRIX"):
+                format = BarcodeFormat.DATA_MATRIX;
+            case ("EAN_8"):
+                format = BarcodeFormat.EAN_8;
+            case ("EAN_13"):
+                format = BarcodeFormat.EAN_13;
+            case ("ITF"):
+                format = BarcodeFormat.ITF;
+            case ("PDF_417"):
+                format = BarcodeFormat.PDF_417;
+            case ("QR_CODE"):
+                format = BarcodeFormat.QR_CODE;
+            case ("RSS_14"): //FIXME: Not generating.
+                format = BarcodeFormat.RSS_14;
+            case ("RSS_EXPANDED"): //FIXME: Not generating.
+                format = BarcodeFormat.RSS_EXPANDED;
+            case ("UPC_A"):
+                format = BarcodeFormat.UPC_A;
+            case ("UPC_E"):
+                format = BarcodeFormat.UPC_E;
+            case ("UPC_EAN_EXTENSION"): //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
+                format = BarcodeFormat.UPC_EAN_EXTENSION;
+            default:
+                //Default to QR to avoid NPE.
+                format = BarcodeFormat.QR_CODE;
+                FirebaseCrash.report(new Exception("Unknown Barcodeformat for translation"));
         }
 
         return format;
