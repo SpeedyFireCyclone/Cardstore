@@ -11,6 +11,15 @@ android {
         versionName "050916"
     }
 
+    signingConfigs {
+        debug {
+            storeFile file('C:/Users/remco/SpeedyFireCyclone.jks')
+            keyAlias 'speedyfirecyclone25'
+            keyPassword 'Remcohofman160398'
+            storePassword 'Remcohofman160398'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled true

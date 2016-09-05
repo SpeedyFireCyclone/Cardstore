@@ -85,7 +85,7 @@ public class DisplayCodeActivity extends Activity {
             format = BarcodeFormat.CODE_93;
         } else if (formatString.equals("CODE_128")) {
             format = BarcodeFormat.CODE_128;
-        } else if (formatString.equals("DATA_MATRIX")) { //FIXME: Needs work (blurry image).
+        } else if (formatString.equals("DATA_MATRIX")) {
             format = BarcodeFormat.DATA_MATRIX;
         } else if (formatString.equals("EAN_8")) {
             format = BarcodeFormat.EAN_8;
@@ -128,27 +128,58 @@ public class DisplayCodeActivity extends Activity {
         }
         MultiFormatWriter writer = new MultiFormatWriter();
         BitMatrix result;
-        try {
+        if (format == BarcodeFormat.DATA_MATRIX) {
+            img_width = 400;
+            img_height = img_width;
             result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
-        } catch (IllegalArgumentException iae) {
-            // Unsupported format
-            FirebaseCrash.report(iae);
-            return null;
+        } else {
+            try {
+                result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
+            } catch (IllegalArgumentException iae) {
+                // Unsupported format
+                FirebaseCrash.report(iae);
+                return null;
+            }
         }
         int width = result.getWidth();
         int height = result.getHeight();
-        int[] pixels = new int[width * height];
-        for (int y = 0; y < height; y++) {
-            int offset = y * width;
-            for (int x = 0; x < width; x++) {
-                pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
+        int[] pixels = new int[img_width * img_height];
+        if (format == BarcodeFormat.DATA_MATRIX) {
+            int pixelsize = img_width / width;
+            if (pixelsize > img_height / height) {
+                pixelsize = img_height / height;
             }
+
+            // All are 0, or black, by default
+            for (int y = 0; y < width; y++) {
+                int offset = y * img_width * pixelsize;
+
+                // scaling pixel height
+                for (int pixelsizeHeight = 0; pixelsizeHeight < pixelsize; pixelsizeHeight++, offset += img_width) {
+                    for (int x = 0; x < height; x++) {
+                        int color = result.get(x, y) ? BLACK : WHITE;
+
+                        // scaling pixel width
+                        for (int pixelsizeWidth = 0; pixelsizeWidth < pixelsize; pixelsizeWidth++) {
+                            pixels[offset + x * pixelsize + pixelsizeWidth] = color;
+                        }
+                    }
+                }
+            }
+            Bitmap bitmap = Bitmap.createBitmap(img_width, img_height, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, img_height, 0, 0, img_width, img_height);
+            return bitmap;
+        } else {
+            for (int y = 0; y < height; y++) {
+                int offset = y * width;
+                for (int x = 0; x < width; x++) {
+                    pixels[offset + x] = result.get(x, y) ? BLACK : WHITE;
+                }
+            }
+
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
+            return bitmap;
         }
-
-        Bitmap bitmap = Bitmap.createBitmap(width, height,
-                Bitmap.Config.ARGB_8888);
-        bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-        return bitmap;
     }
-
 }

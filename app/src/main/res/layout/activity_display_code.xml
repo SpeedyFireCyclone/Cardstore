@@ -23,7 +23,8 @@
         android:id="@+id/codeDisplayCode"
         android:layout_width="300dp"
         android:layout_height="200dp"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_horizontal"
+        android:scaleType="fitCenter" />
 
     <TextView
         android:id="@+id/textDisplayCode"
