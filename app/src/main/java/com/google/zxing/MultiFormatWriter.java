@@ -26,6 +26,7 @@ import com.google.zxing.oned.Code93Writer;
 import com.google.zxing.oned.EAN13Writer;
 import com.google.zxing.oned.EAN8Writer;
 import com.google.zxing.oned.ITFWriter;
+import com.google.zxing.oned.PlesseyWriter;
 import com.google.zxing.oned.UPCAWriter;
 import com.google.zxing.oned.UPCEWriter;
 import com.google.zxing.pdf417.PDF417Writer;
@@ -95,6 +96,9 @@ public final class MultiFormatWriter implements Writer {
         break;
       case AZTEC:
         writer = new AztecWriter();
+        break;
+      case PLESSEY:
+        writer = new PlesseyWriter();
         break;
       default:
         throw new IllegalArgumentException("No encoder available for format " + format);

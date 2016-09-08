@@ -30,7 +30,7 @@ public class DisplayCodeActivity extends Activity {
 
     private static final int WHITE = 0xFFEEEEEE;
     private static final int BLACK = 0xFF000000;
-    public static BarcodeFormat format = null;
+    public static BarcodeFormat format;
 
     private static String guessAppropriateEncoding(CharSequence contents) {
         // Very crude at the moment
@@ -58,7 +58,7 @@ public class DisplayCodeActivity extends Activity {
         // barcode image
         try {
             ImageView code = (ImageView) findViewById(R.id.codeDisplayCode);
-            Bitmap bitmapimage = encodeAsBitmap(barcodeString, formatTranslator(formatString), 600, 400);
+            Bitmap bitmapimage = encodeAsBitmap(barcodeString, formatTranslator(formatString), 3000, 1000);
             code.setImageBitmap(bitmapimage);
         } catch (WriterException e) {
             e.printStackTrace();
@@ -108,9 +108,11 @@ public class DisplayCodeActivity extends Activity {
                 return BarcodeFormat.UPC_E;
             case "UPC_EAN_EXTENSION": //TODO: Extensions are not detected in barcode scanner, possible fix might be an advanced edit menu.
                 return BarcodeFormat.UPC_EAN_EXTENSION;
+            case "PLESSEY":
+                return BarcodeFormat.PLESSEY;
             default:
                 //Default to QR to avoid NPE.
-                FirebaseCrash.report(new Exception("Unknown Barcodeformat for translation"));
+                FirebaseCrash.report(new Exception("Unknown Barcodeformat for translation: " + formatString));
                 return BarcodeFormat.QR_CODE;
         }
     }

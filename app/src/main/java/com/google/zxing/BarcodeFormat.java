@@ -56,6 +56,11 @@ public enum BarcodeFormat {
   /** PDF417 format. */
   PDF_417,
 
+  /**
+   * Plessey-format.
+   **/
+  PLESSEY,
+
   /** QR Code 2D barcode format. */
   QR_CODE,
 

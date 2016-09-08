@@ -21,16 +21,20 @@
 
     <ImageView
         android:id="@+id/codeDisplayCode"
-        android:layout_width="300dp"
+        android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_gravity="center_horizontal"
+        android:layout_weight="10"
         android:scaleType="fitCenter" />
 
     <TextView
         android:id="@+id/textDisplayCode"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
+        android:layout_weight="50"
+        android:text="Card data"
+        android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceMedium" />
 
 </LinearLayout>
