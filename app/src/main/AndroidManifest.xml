@@ -29,6 +29,16 @@
             android:screenOrientation="portrait" />
         <activity android:name=".LicensesActivity" />
         <activity android:name=".AboutActivity" />
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="tk.speedyfirecyclone.cardstore.MainActivity" />
+        </activity>
+        <activity android:name=".LogOut" />
     </application>
 
 </manifest>

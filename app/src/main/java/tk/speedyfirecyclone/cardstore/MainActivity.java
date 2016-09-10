@@ -139,6 +139,10 @@ public class MainActivity extends AppCompatActivity {
                 Intent INFO = new Intent(this, AboutActivity.class);
                 startActivity(INFO);
                 return true;
+            case R.id.overflowSETTINGS:
+                Intent Settings = new Intent(this, SettingsActivity.class);
+                startActivity(Settings);
+                return true;
             case R.id.overflowCONVERT:
                 convert();
                 return true;

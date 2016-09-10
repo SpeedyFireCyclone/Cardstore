@@ -79,6 +79,10 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         };
+
+        if (getIntent().getStringExtra("intent") != null) {
+            mAuth.signOut();
+        }
     }
 
     private void signIn() {

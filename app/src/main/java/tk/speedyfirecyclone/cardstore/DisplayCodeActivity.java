@@ -1,11 +1,14 @@
 package tk.speedyfirecyclone.cardstore;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.crash.FirebaseCrash;
 import com.google.zxing.BarcodeFormat;
@@ -31,6 +34,8 @@ public class DisplayCodeActivity extends Activity {
     private static final int WHITE = 0xFFEEEEEE;
     private static final int BLACK = 0xFF000000;
     public static BarcodeFormat format;
+    Boolean Advanced;
+    Boolean Bright;
 
     private static String guessAppropriateEncoding(CharSequence contents) {
         // Very crude at the moment
@@ -46,9 +51,16 @@ public class DisplayCodeActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_code);
-        WindowManager.LayoutParams lp = this.getWindow().getAttributes();
-        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL;
-        this.getWindow().setAttributes(lp);
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        Advanced = sharedPref.getBoolean(SettingsActivity.ADVANCED_MODE, false);
+        Bright = sharedPref.getBoolean(SettingsActivity.AUTO_BRIGHT, true);
+
+        if (Bright) {
+            WindowManager.LayoutParams lp = this.getWindow().getAttributes();
+            lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL;
+            this.getWindow().setAttributes(lp);
+        }
 
         // barcode data
         String barcodeString = getIntent().getStringExtra("barcodeString");
@@ -58,7 +70,7 @@ public class DisplayCodeActivity extends Activity {
         // barcode image
         try {
             ImageView code = (ImageView) findViewById(R.id.codeDisplayCode);
-            Bitmap bitmapimage = encodeAsBitmap(barcodeString, formatTranslator(formatString), 3000, 1000);
+            Bitmap bitmapimage = encodeAsBitmap(barcodeString, formatTranslator(formatString), 1500, 1000);
             code.setImageBitmap(bitmapimage);
         } catch (WriterException e) {
             e.printStackTrace();
@@ -132,15 +144,19 @@ public class DisplayCodeActivity extends Activity {
         if (format == BarcodeFormat.DATA_MATRIX) {
             img_width = 400;
             img_height = img_width;
+        } else if (format == BarcodeFormat.PLESSEY) {
+            img_width = 4000;
+            img_height = 1000;
+        }
+        try {
             result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
-        } else {
-            try {
-                result = writer.encode(contentsToEncode, format, img_width, img_height, hints);
-            } catch (IllegalArgumentException iae) {
-                // Unsupported format
+        } catch (IllegalArgumentException iae) {
+            // Unsupported format or characters
+            Toast.makeText(DisplayCodeActivity.this, "Invalid barcode: " + iae.getMessage(), Toast.LENGTH_LONG).show();
+            if (!Advanced) {
                 FirebaseCrash.report(iae);
-                return null;
             }
+            return null;
         }
         int width = result.getWidth();
         int height = result.getHeight();

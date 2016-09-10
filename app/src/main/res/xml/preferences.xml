@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="General">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="Bright"
+            android:title="Auto-raise brightness" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="Advanced"
+            android:title="Advanced barcode options" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Account">
+
+        <PreferenceScreen android:title="Sign Out">
+
+            <intent
+                android:targetClass="tk.speedyfirecyclone.cardstore.LogOut"
+                android:targetPackage="tk.speedyfirecyclone.cardstore" />
+
+        </PreferenceScreen>
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

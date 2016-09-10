@@ -33,12 +33,52 @@
             android:layout_marginStart="4dp"
             android:layout_weight="1" />
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/barcodeFormatHint"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="Barcode format: "
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <Spinner
+                android:id="@+id/barcodeFormat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <EditText
+                android:id="@+id/barcodeContents"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Barcode contents" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="setContents"
+                android:text="Set" />
+
+        </LinearLayout>
+
         <Button
             android:id="@+id/confirmButtonCreateCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:enabled="false"
-            android:text="Scan to continue" />
+            android:text="Scan/Add details to continue" />
 
         <Button
             android:id="@+id/deleteButtonCreateCard"
@@ -49,7 +89,6 @@
             android:visibility="invisible" />
 
     </LinearLayout>
-
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fabToScan"

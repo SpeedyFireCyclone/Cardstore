@@ -55,6 +55,7 @@ public class PlesseyWriter extends OneDimensionalCodeWriter {
         if (format != BarcodeFormat.PLESSEY) {
             throw new IllegalArgumentException("Can only encode PLESSEY, but got " + format);
         }
+
         return super.encode(contents, format, width, height, hints);
     }
 
@@ -63,8 +64,9 @@ public class PlesseyWriter extends OneDimensionalCodeWriter {
         int length = contents.length();
         //start + contents + CRC + terminator + end
         int codeWidth = 100 + length * 100 + 2 * 100 + 35 + 100;
+
         for (int i = 0; i < length; i++) {
-            int indexInString = ALPHABET_STRING.indexOf(contents.charAt(i)) + 1;
+            int indexInString = ALPHABET_STRING.indexOf(contents.charAt(i));
             if (indexInString < 0) {
                 throw new IllegalArgumentException("Bad contents: " + contents);
             }

@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 24
-    buildToolsVersion '24.0.1'
+    buildToolsVersion '24.0.2'
     defaultConfig {
         applicationId "tk.speedyfirecyclone.cardstore"
         minSdkVersion 21
         targetSdkVersion 24
-        versionCode 15
-        versionName "070916"
+        versionCode 16
+        versionName "100916"
     }
 
     buildTypes {
@@ -47,6 +47,7 @@ dependencies {
     compile 'com.google.firebase:firebase-auth:9.2.1'
     compile 'com.firebaseui:firebase-ui:0.4.3'
     compile 'com.google.android.gms:play-services-auth:9.2.1'
+    compile 'com.android.support:support-v4:24.2.0'
 }
 
 apply plugin: 'com.google.gms.google-services'

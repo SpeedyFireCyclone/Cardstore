@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="barcodeformats_array">
+        <item>Aztec</item>
+        <item>Codabar</item>
+        <item>Code 39</item>
+        <item>Code 93</item>
+        <item>Code 128</item>
+        <item>DataMatrix</item>
+        <item>EAN 8</item>
+        <item>EAN 13</item>
+        <item>ITF</item>
+        <item>PDF417</item>
+        <item>Plessey (UK)</item>
+        <item>QR-Code</item>
+        <item>UPC-A</item>
+        <item>UPC-E</item>
+    </string-array>
+</resources>
